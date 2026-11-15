@@ -1,6 +1,18 @@
 #include "gb.h"
+#include "cartridge.h"
+#include <string.h>
 
+int gb_init(GameBoy *gb,const char *rom_path){
+    memset(gb,0,sizeof(*gb));
+    int result=cart_load(&gb->cart,rom_path);
+    if (result!=0){return 1;}
+    cpu_init(&gb->cpu);
+    return 0;
+}
 
+void gb_free(GameBoy *gb){
+    cart_free(&gb->cart);
+}
 uint8_t read8(GameBoy *gb,uint16_t adresse){
     if (adresse<=0x7fff && adresse<gb->cart.rom_size){
         //if we search a rom adresse
