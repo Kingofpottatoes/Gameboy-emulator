@@ -11,7 +11,5 @@ void cpu_init(CPU *cpu){
 }
 
 int cpu_step(GameBoy *gb){
-
-
     return 0;
 }

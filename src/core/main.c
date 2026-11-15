@@ -1,4 +1,4 @@
-#include "cartridge.h"
+#include "gb.h"
 #include <stdio.h>
 
 
@@ -7,7 +7,12 @@ int main(int argc, char *argv[]){
         printf("usage: gb <rom> \n");
         return 1;
     }
-    Cartridge cart;
-    cart_load(&cart, argv[1]);
-    cart_print_header(&cart);
+    GameBoy gb;
+    int result=gb_init(&gb,argv[1]);
+    if (result!=0){return 1;}
+    cart_print_header(&gb.cart);
+    printf("%u \n",read8(&gb,0x0134));
+    write8(&gb,0xC000,42);
+    printf("0x%02X \n",read8(&gb,0xC000));
+    gb_free(&gb);
 }

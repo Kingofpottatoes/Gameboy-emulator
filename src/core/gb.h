@@ -11,6 +11,6 @@ typedef struct GameBoy {
 } GameBoy;
 
 int gb_init(GameBoy *gb,const char *rom_path);
-void free_gb(GameBoy *gb);
+void gb_free(GameBoy *gb);
 uint8_t read8(GameBoy *gb,uint16_t adresse);
 void write8(GameBoy *gb,uint16_t adresse,uint8_t value);
