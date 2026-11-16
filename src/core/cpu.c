@@ -5,6 +5,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+static void unknow_opcode(GameBoy *gb,uint8_t opcode){
+    printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
+    exit(1);
+}
+static void unknow_op(GameBoy *gb,uint8_t op){
+    printf("unknown operand %02X at pc-1 : %04X \n",op,gb->cpu.pc-1);
+    exit(1);
+}
+
+
 static uint8_t fetch8(GameBoy *gb){
     uint8_t operand=read8(gb,gb->cpu.pc);
     gb->cpu.pc+=1;
@@ -65,10 +76,95 @@ static void write_r8(GameBoy *gb,uint8_t index,uint8_t value){
     }
 }
 
-static void unknow_opcode(GameBoy *gb,uint8_t opcode){
-    printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
-    exit(1);
+static void alu(GameBoy *gb,uint8_t op,uint8_t value){
+    uint8_t a=gb->cpu.a;
+    uint8_t c=get_flag(&gb->cpu, FLAG_C);
+    bool Z,N,H,C;
+    int r;
+    switch(op){
+        case 0:{
+            //ADD
+            r=a+value;
+            Z=(r &0xFF)==0;
+            N=false;
+            H=(a & 0xF) + (value & 0xF) > 0xF;
+            C=r>0xFF;
+            break;
+        }
+        case 1:{
+            //ADC
+            r=a+value + c;
+            Z=(r &0xFF)==0;
+            N=false;
+            H=(a & 0xF) + (value & 0xF) + c> 0xF;
+            C=r>0xFF;
+            break;
+        }
+        case 2:{
+            //SUB
+            r=a-value;
+            Z=(r &0xFF)==0;
+            N=true;
+            H=(a & 0xF) < (value & 0xF);
+            C=r<0;
+            break;
+        }
+        case 3:{
+            //SBC
+            r=a-value-c;
+            Z=(r & 0xFF) == 0;
+            N=true;
+            H=(a & 0xF) < (value & 0xF) + c;
+            C=r<0;
+            break;
+        }
+        case 4:{
+            //AND
+            r=a & value;
+            Z=r==0;
+            N=false;
+            H=true;//strangeness of the GameBoy \(._.)/
+            C=false;
+            break;
+        }
+        case 5:{
+            //XOR
+            r=a ^ value;
+            Z=r==0;
+            N=false;
+            H=false;
+            C=false;
+            break;
+        }
+        case 6:{
+            //OR
+            r=a | value;
+            Z=r==0;
+            N=false;
+            H=false;
+            C=false;
+            break;
+        }
+        case 7:{
+            //CP
+            r =a - value;
+            Z=(r &0xFF)==0;
+            N=true;
+            H=(a & 0xF) < (value & 0xF);
+            C=r<0;
+            break;
+
+        }
+        default:{unknow_op(gb,op);}
+    }
+    if (op!=7){gb->cpu.a=(uint8_t) r;}
+
+    set_flag(&gb->cpu,FLAG_Z,Z);
+    set_flag(&gb->cpu,FLAG_N,N);
+    set_flag(&gb->cpu,FLAG_H,H);
+    set_flag(&gb->cpu,FLAG_C,C);
 }
+
 
 void cpu_init(CPU *cpu){
     cpu->af=0x01B0;
@@ -106,8 +202,11 @@ int cpu_step(GameBoy *gb){
             break;
         }
         case 2:{
-            //ALU TODO
-            unknow_opcode(gb,opcode);
+            //ALU
+            uint8_t value=read_r8(gb, zzz);
+            alu(gb, yyy, value);
+            if(zzz==6){return 8;}
+            else{return 4;}
             break;
         }
         case 3:{

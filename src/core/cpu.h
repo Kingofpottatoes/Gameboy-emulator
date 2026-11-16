@@ -1,9 +1,9 @@
 #ifndef CPU_H
 #define CPU_H
-#define FLAG_Z =0x80
-#define FLAG_N =0x40
-#define FLAG_H =0x20
-#define FLAG_C =0x10
+#define FLAG_Z 0x80
+#define FLAG_N 0x40
+#define FLAG_H 0x20
+#define FLAG_C 0x10
 #include <stdint.h>
 
 typedef struct {
