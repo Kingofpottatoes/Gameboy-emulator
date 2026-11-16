@@ -48,6 +48,7 @@ static uint8_t read_r8(GameBoy *gb,uint8_t index){
         }
     }
 }
+
 static void write_r8(GameBoy *gb,uint8_t index,uint8_t value){
     switch (index){
         case 0:{gb->cpu.b=value;break;}
@@ -63,6 +64,12 @@ static void write_r8(GameBoy *gb,uint8_t index,uint8_t value){
         }
     }
 }
+
+static void unknow_opcode(GameBoy *gb,uint8_t opcode){
+    printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
+    exit(1);
+}
+
 void cpu_init(CPU *cpu){
     cpu->af=0x01B0;
     cpu->bc=0x0013;
@@ -79,16 +86,16 @@ int cpu_step(GameBoy *gb){
     uint8_t zzz=opcode & 0b00000111;
     switch (xx) {
         case 0:{
-            //todo
-            printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
-            exit(1);
+            switch(opcode){
+                case 0 :{return 4;}
+                default:{unknow_opcode(gb,opcode);}
+            }
             break;
         }
         case 1:{
             if (opcode==0x76){
                 //HALT
-                printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
-                exit(1);
+                unknow_opcode(gb,opcode);
                 //todo
                 break;
             }
@@ -100,14 +107,19 @@ int cpu_step(GameBoy *gb){
         }
         case 2:{
             //ALU TODO
-            printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
-            exit(1);
+            unknow_opcode(gb,opcode);
             break;
         }
         case 3:{
-            //todo
-            printf("unknown opcode %02X at pc-1 : %04X \n",opcode,gb->cpu.pc-1);
-            exit(1);
+            switch(opcode){
+                case 0xC3:{
+                    uint16_t dest=fetch16(gb);
+                    gb->cpu.pc=dest;
+                    return 16;
+                }
+                default:{unknow_opcode(gb,opcode);}
+            }
+            
             break;
         }
         default:{
