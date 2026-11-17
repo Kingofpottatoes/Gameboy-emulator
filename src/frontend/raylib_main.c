@@ -15,7 +15,18 @@ static const Color palette[4] = {
     {15, 56, 15, 255}
 };
 
+typedef struct { KeyboardKey Key_front; enum Keys key_core; } Key_Links;
 
+static const Key_Links links[] = {
+    {KEY_UP,UP},
+    {KEY_DOWN,DOWN},
+    {KEY_LEFT,LEFT},
+    {KEY_RIGHT,RIGHT},
+    {KEY_A,A},
+    {KEY_D,B},
+    {KEY_W,SELECT},
+    {KEY_S,START}
+};
 
 
 void Window_init(){
@@ -39,6 +50,10 @@ int main(int argc, char *argv[]) {
     Window_init();
 
     while (!WindowShouldClose()) {
+        int key;
+        for (key=0;key<8;key++){
+            gb_set_button(&gb, links[key].key_core, IsKeyDown(links[key].Key_front));
+        }
         gb_run_frame(&gb);
         int x,y;
         for (y=0;y<144;y++){

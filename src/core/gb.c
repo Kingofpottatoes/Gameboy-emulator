@@ -91,6 +91,16 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if (adresse==0xFF4B){
         return gb->ppu.wx;
     }
+    else if (adresse==0xFF00){
+        uint8_t keys=0b11001111 | (gb->joypad_select & 0b00110000); //give us 11PC1111
+        if(((gb->joypad_select >> 4)&1)==0){
+            keys=keys & ~(gb->buttons & 0b00001111);                   
+        }
+        if (((gb->joypad_select >> 5)&1)==0){
+            keys=keys & ~(gb->buttons>>4);
+        }
+        return keys;
+    }
     else{
         //TODO
         return 0xFF;
@@ -169,9 +179,19 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if (adresse==0xFF4B){
         gb->ppu.wx=value;
     }
-
+    else if (adresse==0xFF00){
+        gb->joypad_select=(value & 0b001100000);
+    }
     else{
         //TODO
+    }
+}
+void gb_set_button(GameBoy *gb, uint8_t button, bool pressed){
+    if (pressed){
+        gb->buttons |= (1 << button);
+    }
+    else{
+        gb->buttons &=~(1 << button);
     }
 }
 
@@ -184,5 +204,5 @@ void gb_run_frame(GameBoy *gb){
         ppu_step(gb, cycle);
         cycles+=cycle;
     }
-    gb->cycles_left=cycles-70224;
+    gb->cycles_left=cycles-CYCLES_PER_FRAME;
 }
