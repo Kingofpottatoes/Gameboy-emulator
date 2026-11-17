@@ -9,4 +9,7 @@ typedef struct {
     int tima_counter;
 } Timer;
 
+typedef struct GameBoy GameBoy ;
+
+void timer_init(GameBoy *gb);
 void timer_step(GameBoy *gb,int cycles);

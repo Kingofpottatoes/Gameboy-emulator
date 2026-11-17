@@ -37,14 +37,15 @@ int main(int argc, char *argv[]) {
     int result=gb_init(&gb,argv[1]);
     if (result!=0){return 1;}
     Window_init();
-    int x,y;
-    for (y=0;y<144;y++){
-        for (x=0;x<160;x++){
-            pixels[y * 160 + x] = palette[(x / 40) % 4];
-        }
-    }
+
     while (!WindowShouldClose()) {
         gb_run_frame(&gb);
+        int x,y;
+        for (y=0;y<144;y++){
+            for (x=0;x<160;x++){
+                pixels[y * 160 + x] = palette[gb.framebuffer[y][x]];
+            }
+        }
         UpdateTexture(screen, pixels);
         BeginDrawing();
         ClearBackground(BLACK);

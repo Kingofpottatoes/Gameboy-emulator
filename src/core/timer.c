@@ -17,3 +17,8 @@ void timer_step(GameBoy *gb,int cycles){
 
     }
 }
+
+void timer_init(GameBoy *gb){
+    gb->timer.div_counter=0xAB00;
+    gb->timer.tac=0xF8;
+}

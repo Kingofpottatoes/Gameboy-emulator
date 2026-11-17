@@ -1,6 +1,9 @@
+#ifndef GB_H
+#define GB_H
 #include "cpu.h"
 #include "cartridge.h"
 #include "timer.h"
+#include "ppu.h"
 #include <stdint.h>
 
 
@@ -8,8 +11,11 @@ typedef struct GameBoy {
     CPU cpu;
     Cartridge cart;
     Timer timer;
+    PPU ppu;
     uint8_t wram[0x2000]; //ram currently working
     uint8_t hram[0x7F];
+    uint8_t vram[0x2000];
+    uint8_t oam[0xA0];
     uint8_t serial_data;
     uint8_t ie;
     uint8_t iflag;
@@ -22,3 +28,4 @@ void gb_free(GameBoy *gb);
 uint8_t read8(GameBoy *gb,uint16_t adresse);
 void write8(GameBoy *gb,uint16_t adresse,uint8_t value);
 void gb_run_frame(GameBoy *gb);
+#endif

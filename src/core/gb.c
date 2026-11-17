@@ -10,6 +10,8 @@ int gb_init(GameBoy *gb,const char *rom_path){
     int result=cart_load(&gb->cart,rom_path);
     if (result!=0){return 1;}
     cpu_init(&gb->cpu);
+    ppu_init(gb);
+    timer_init(gb);
     return 0;
 }
 
@@ -30,8 +32,16 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
         //if its hram
         return gb->hram[adresse-0xff80];
     }
+    else if (adresse>=0x8000 && adresse<=0x9FFF){
+        //if its VRAM
+        return gb->vram[adresse-0x8000];
+    }
+    else if (adresse>=0xFE00 && adresse<=0xFE9F){
+        //if its OAM
+        return gb->oam[adresse-0xFE00];
+    }
     else if (adresse == 0xFF44) {
-        return 0x90;   // LY stub for Gameboy Doctor (no PPU yet)
+        return gb->ppu.ly;   //PPU implemented
     }
     else if (adresse==0xFFFF){
         return gb->ie;
@@ -51,6 +61,36 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if(adresse==0xFF07){
         return gb->timer.tac | 0xF8;
     }
+    else if (adresse==0xFF40){
+        return gb->ppu.lcdc;
+    }
+    else if (adresse==0xFF41){
+        return gb->ppu.stat | 0x80;
+    }
+    else if (adresse==0xFF45){
+        return gb->ppu.lyc;
+    }
+    else if (adresse==0xFF42){
+        return gb->ppu.scy;
+    }
+    else if (adresse==0xFF43){
+        return gb->ppu.scx;
+    }
+    else if (adresse==0xFF47){
+        return gb->ppu.bgp;
+    }
+    else if (adresse==0xFF48){
+        return gb->ppu.obp0;
+    }
+    else if (adresse==0xFF49){
+        return gb->ppu.obp1;
+    }
+    else if (adresse==0xFF4A){
+        return gb->ppu.wy;
+    }
+    else if (adresse==0xFF4B){
+        return gb->ppu.wx;
+    }
     else{
         //TODO
         return 0xFF;
@@ -66,6 +106,14 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if (adresse>=0xff80 && adresse<=0xfffe){
         //if its hram
         gb->hram[adresse-0xff80]=value;
+    }
+    else if (adresse>=0x8000 && adresse<=0x9FFF){
+        //if its VRAM
+        gb->vram[adresse-0x8000]=value;
+    }
+    else if (adresse>=0xFE00 && adresse<=0xFE9F){
+        //if its OAM
+        gb->oam[adresse-0xFE00]=value;
     }
     else if (adresse == 0xFF01) {
         gb->serial_data = value;
@@ -91,6 +139,37 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if(adresse==0xFF07){
         gb->timer.tac = value;
     }
+    else if (adresse==0xFF40){
+        gb->ppu.lcdc=value;
+    }
+    else if (adresse==0xFF41){
+        gb->ppu.stat=(gb->ppu.stat & 0x07) | (value & 0x78);
+    }
+    else if (adresse==0xFF45){
+        gb->ppu.lyc=value;
+    }
+    else if (adresse==0xFF42){
+        gb->ppu.scy=value;
+    }
+    else if (adresse==0xFF43){
+        gb->ppu.scx=value;
+    }
+    else if (adresse==0xFF47){
+        gb->ppu.bgp=value;
+    }
+    else if (adresse==0xFF48){
+        gb->ppu.obp0=value;
+    }
+    else if (adresse==0xFF49){
+        gb->ppu.obp1=value;
+    }
+    else if (adresse==0xFF4A){
+        gb->ppu.wy=value;
+    }
+    else if (adresse==0xFF4B){
+        gb->ppu.wx=value;
+    }
+
     else{
         //TODO
     }
@@ -102,6 +181,7 @@ void gb_run_frame(GameBoy *gb){
     while (cycles<CYCLES_PER_FRAME){
         cycle=cpu_step(gb);
         timer_step(gb,cycle);
+        ppu_step(gb, cycle);
         cycles+=cycle;
     }
     gb->cycles_left=cycles-70224;
