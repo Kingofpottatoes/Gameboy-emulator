@@ -191,6 +191,24 @@ static bool check_cond(GameBoy *gb, uint8_t cc){
         }   
 
 }
+
+static uint8_t handle_interupt(GameBoy *gb){
+    uint8_t pending_interupts=gb->ie & gb->iflag & 0x1F;
+    if (!gb->cpu.ime || pending_interupts==0){return 0;}
+    int i;
+    uint8_t interupt=0;
+    for(i=0;i<5;i++){
+        if(((pending_interupts >> i) & 1)==1){
+            interupt=i;
+            break;
+        }
+    }
+    gb->iflag &= ~(1 << interupt);
+    gb->cpu.ime=false;
+    push16(gb,gb->cpu.pc);
+    gb->cpu.pc = 0x40 + interupt * 8;
+    return 20;
+}
 static int cb_step(GameBoy *gb){
     uint8_t opcode=fetch8(gb);
     uint8_t xx=opcode >> 6;
@@ -403,6 +421,22 @@ void cpu_init(CPU *cpu){
 }
 
 int cpu_step(GameBoy *gb){
+    if (gb->cpu.ime_delay > 0){
+        gb->cpu.ime_delay-=1;
+        if (gb->cpu.ime_delay==0){
+            gb->cpu.ime=true;
+        }
+    }
+    if (gb->cpu.halted){
+        if ((gb->ie & gb->iflag & 0x1F)!=0){
+            gb->cpu.halted=false;
+        }
+        else{return 4;}
+    }
+    uint8_t interupt_cycles=handle_interupt(gb);
+    if (interupt_cycles!=0){
+        return interupt_cycles;
+    }
     uint8_t opcode=fetch8(gb);
     uint8_t xx=opcode >> 6;
     uint8_t yyy=(opcode>>3) & 0b00000111;
@@ -656,9 +690,8 @@ int cpu_step(GameBoy *gb){
         case 1:{
             if (opcode==0x76){
                 //HALT
-                unknow_opcode(gb,opcode);
-                //todo
-                break;
+                gb->cpu.halted=true;
+                return 4;
             }
             uint8_t value=read_r8(gb, zzz);
             write_r8(gb, yyy, value);
@@ -742,11 +775,12 @@ int cpu_step(GameBoy *gb){
                 case 0xF3:{
                     //DI
                     gb->cpu.ime = false;
+                    gb->cpu.ime_delay = 0;
                     return 4;
                 }
                 case 0xFB:{
-                    gb->cpu.ime = true;
-                    // TODO: delayed by one instruction
+                    //EI
+                    gb->cpu.ime_delay=2;
                     return 4;
                 }
                 case 0xD9:{

@@ -31,6 +31,24 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if (adresse == 0xFF44) {
         return 0x90;   // LY stub for Gameboy Doctor (no PPU yet)
     }
+    else if (adresse==0xFFFF){
+        return gb->ie;
+    }
+    else if (adresse==0xFF0F){
+        return gb->iflag | 0xE0;
+    }
+    else if (adresse==0xFF04){
+        return gb->timer.div_counter >> 8;
+    }
+    else if(adresse==0xFF05){
+        return gb->timer.tima;
+    }
+    else if(adresse==0xFF06){
+        return gb->timer.tma;
+    }
+    else if(adresse==0xFF07){
+        return gb->timer.tac | 0xF8;
+    }
     else{
         //TODO
         return 0xFF;
@@ -52,6 +70,24 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     }
     else if (adresse == 0xFF02 && value == 0x81) {
         fprintf(stderr, "%c", gb->serial_data);
+    }
+    else if (adresse==0xFFFF){
+        gb->ie=value;
+    }
+    else if (adresse==0xFF0F){
+        gb->iflag=value;
+    }
+    else if (adresse==0xFF04){
+        gb->timer.div_counter = 0;
+    }
+    else if(adresse==0xFF05){
+        gb->timer.tima= value;
+    }
+    else if(adresse==0xFF06){
+        gb->timer.tma= value;
+    }
+    else if(adresse==0xFF07){
+        gb->timer.tac = value;
     }
     else{
         //TODO

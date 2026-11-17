@@ -21,6 +21,7 @@ int main(int argc, char *argv[]){
     
     while (1){
         //gameboy_doctor_logs(&gb);
-        cpu_step(&gb);
+        int cycles=cpu_step(&gb);
+        timer_step(&gb,cycles);
     }
 }

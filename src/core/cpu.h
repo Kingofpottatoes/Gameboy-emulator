@@ -39,6 +39,8 @@ typedef struct {
     uint16_t sp;
     uint16_t pc;
     bool ime;
+    uint8_t ime_delay;
+    bool halted;
 }CPU;
 
 typedef struct GameBoy GameBoy ;
