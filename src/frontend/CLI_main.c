@@ -1,5 +1,5 @@
-#include "cpu.h"
-#include "gb.h"
+#include "../core/cpu.h"
+#include "../core/gb.h"
 #include <stdio.h>
 
 
@@ -20,7 +20,7 @@ int main(int argc, char *argv[]){
     if (result!=0){return 1;}
     
     while (1){
-        //gameboy_doctor_logs(&gb);
+        gameboy_doctor_logs(&gb);
         int cycles=cpu_step(&gb);
         timer_step(&gb,cycles);
     }

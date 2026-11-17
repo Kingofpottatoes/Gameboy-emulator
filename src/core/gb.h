@@ -13,9 +13,12 @@ typedef struct GameBoy {
     uint8_t serial_data;
     uint8_t ie;
     uint8_t iflag;
+    uint8_t framebuffer[144][160]; //DA SCREEEEN
+    int cycles_left; //when we dont do exactly 70 224 cycles by frame
 } GameBoy;
 
 int gb_init(GameBoy *gb,const char *rom_path);
 void gb_free(GameBoy *gb);
 uint8_t read8(GameBoy *gb,uint16_t adresse);
 void write8(GameBoy *gb,uint16_t adresse,uint8_t value);
+void gb_run_frame(GameBoy *gb);

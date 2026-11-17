@@ -2,10 +2,11 @@
 # Compiler and flags
 CC      := gcc
 CFLAGS  := -Wall -Wextra -g -MMD -MP -Isrc/core
-LDFLAGS :=
+LDFLAGS := $(shell pkg-config --libs raylib) -lm
 
 # Sources -> objects (src/core/foo.c -> build/core/foo.o)
-SRCS := $(wildcard src/core/*.c) $(wildcard src/frontend/*.c)
+FRONTEND ?= raylib
+SRCS := $(wildcard src/core/*.c) src/frontend/$(FRONTEND)_main.c
 OBJS := $(patsubst src/%.c,build/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 

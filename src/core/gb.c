@@ -1,7 +1,9 @@
 #include "gb.h"
 #include "cartridge.h"
+#include "cpu.h"
 #include <string.h>
 #include <stdio.h>
+#define CYCLES_PER_FRAME 70224
 
 int gb_init(GameBoy *gb,const char *rom_path){
     memset(gb,0,sizeof(*gb));
@@ -92,4 +94,15 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else{
         //TODO
     }
+}
+
+void gb_run_frame(GameBoy *gb){
+    int cycles=gb->cycles_left;
+    int cycle=0;
+    while (cycles<CYCLES_PER_FRAME){
+        cycle=cpu_step(gb);
+        timer_step(gb,cycle);
+        cycles+=cycle;
+    }
+    gb->cycles_left=cycles-70224;
 }
