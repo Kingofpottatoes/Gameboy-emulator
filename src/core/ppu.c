@@ -1,10 +1,38 @@
 #include "ppu.h"
 #include "gb.h"
+#include <stdint.h>
 
 static void render_scanline(GameBoy *gb){
+
+    uint16_t map_base;
+    if(((gb->ppu.lcdc>>3)& 1)!=0){
+        map_base=0x9C00;
+    }
+    else{
+        map_base=0x9800;
+    }
+    uint16_t py = (gb->ppu.ly + gb->ppu.scy) & 0xFF;
+    uint16_t tile_row = py / 8;
+    uint8_t line_in_tile = py % 8;
     int x;
+    uint8_t px,tile_col,high_color,low_color,color;
+    uint16_t tile_addr;
     for (x=0;x<160;x++){
-        gb->framebuffer[gb->ppu.ly][x]=(gb->ppu.ly/36)%4;
+        px = (x + gb->ppu.scx) & 0xFF;
+        tile_col = px / 8;
+        uint8_t coord_in_line=px%8;
+        uint8_t i_tile=read8(gb,map_base+tile_row*32 +tile_col);
+        if (((gb->ppu.lcdc>>4)&1)==1){
+            tile_addr=0x8000 + i_tile * 16;
+        }
+        else{
+            tile_addr=0x9000 + (int8_t)i_tile * 16;
+        }
+        low_color=read8(gb,tile_addr +line_in_tile*2);
+        high_color=read8(gb,1+tile_addr +line_in_tile*2);
+        color=((high_color>>(7-coord_in_line))&1)*2+((low_color>>(7-coord_in_line))&1);
+        uint8_t nuance=((gb->ppu.bgp>>color*2)&0b00000011);
+        gb->framebuffer[gb->ppu.ly][x]=nuance;
     }
 }
 
