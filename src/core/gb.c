@@ -182,6 +182,13 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if (adresse==0xFF00){
         gb->joypad_select=(value & 0b001100000);
     }
+    else if(adresse==0xFF46){
+        uint16_t source= (value<<8) | 0x00;
+        int addr;
+        for (addr=0;addr<0xA0;addr++){
+            gb->oam[addr]=read8(gb,source+addr);
+        }
+    }
     else{
         //TODO
     }

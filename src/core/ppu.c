@@ -15,8 +15,9 @@ static void render_scanline(GameBoy *gb){
     uint16_t tile_row = py / 8;
     uint8_t line_in_tile = py % 8;
     int x;
-    uint8_t px,tile_col,high_color,low_color,color;
+    uint8_t px,tile_col,high_color,low_color,color,nuance;
     uint16_t tile_addr;
+    
     for (x=0;x<160;x++){
         px = (x + gb->ppu.scx) & 0xFF;
         tile_col = px / 8;
@@ -31,8 +32,49 @@ static void render_scanline(GameBoy *gb){
         low_color=read8(gb,tile_addr +line_in_tile*2);
         high_color=read8(gb,1+tile_addr +line_in_tile*2);
         color=((high_color>>(7-coord_in_line))&1)*2+((low_color>>(7-coord_in_line))&1);
-        uint8_t nuance=((gb->ppu.bgp>>color*2)&0b00000011);
+        nuance=((gb->ppu.bgp>>color*2)&0b00000011);
         gb->framebuffer[gb->ppu.ly][x]=nuance;
+    }
+    int i;
+    int n_sprite=0;
+    for (i=0;i<160;i+=4){
+        int sprite_y=gb->oam[i]-16;
+        int sprite_x=gb->oam[i+1]-8;
+        uint8_t i_tile=gb->oam[i+2];
+        uint8_t flag=gb->oam[i+3];
+        if ((gb->ppu.ly<sprite_y)||(gb->ppu.ly>=sprite_y+8)){
+            continue;
+        }
+        else {
+            n_sprite+=1;
+            uint8_t sprite_line=gb->ppu.ly-sprite_y;
+            tile_addr=0x8000 + i_tile * 16;
+            low_color=read8(gb,tile_addr +sprite_line*2);
+            high_color=read8(gb,1+tile_addr +sprite_line*2);
+            int j;
+            for (j=0;j<8;j++){
+                if ((sprite_x+j<0)||(sprite_x+j>159)){
+                    continue;
+                }
+                color=((high_color>>(7-j))&1)*2+((low_color>>(7-j))&1);
+                if (color==0){
+                    continue;
+                }
+                if (((flag>>4)&1)==0){
+                    nuance=((gb->ppu.obp0>>color*2)&0b00000011);
+                }
+                else{
+                    nuance=((gb->ppu.obp1>>color*2)&0b00000011);
+                }
+                gb->framebuffer[gb->ppu.ly][sprite_x + j]=nuance;
+
+            }
+
+        }
+        if(n_sprite==10){
+            break;
+        }
+
     }
 }
 
