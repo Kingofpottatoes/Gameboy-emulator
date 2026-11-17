@@ -180,7 +180,7 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
         gb->ppu.wx=value;
     }
     else if (adresse==0xFF00){
-        gb->joypad_select=(value & 0b001100000);
+        gb->joypad_select=(value & 0b00110000);
     }
     else if(adresse==0xFF46){
         uint16_t source= (value<<8) | 0x00;
