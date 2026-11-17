@@ -5,6 +5,7 @@
 #define FLAG_H 0x20
 #define FLAG_C 0x10
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
     union {
@@ -37,6 +38,7 @@ typedef struct {
     };
     uint16_t sp;
     uint16_t pc;
+    bool ime;
 }CPU;
 
 typedef struct GameBoy GameBoy ;
