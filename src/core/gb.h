@@ -8,6 +8,7 @@ typedef struct GameBoy {
     Cartridge cart;
     uint8_t wram[0x2000]; //ram currently working
     uint8_t hram[0x7F];
+    uint8_t serial_data;
 } GameBoy;
 
 int gb_init(GameBoy *gb,const char *rom_path);
