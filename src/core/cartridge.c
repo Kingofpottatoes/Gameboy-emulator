@@ -5,6 +5,12 @@
 #include <string.h>
 
 int cart_load(Cartridge *c,const char *rom_path){
+    char *p=strrchr(rom_path,'.');
+    int len;
+    if (p==NULL){len =(int)(strlen(rom_path));}
+    else{len =(int)(p-rom_path);}
+    snprintf(c->save_path, 512,"%.*s.sav",len,rom_path);
+
 
     FILE * file=fopen(rom_path,"rb");
     
@@ -80,6 +86,12 @@ int cart_load(Cartridge *c,const char *rom_path){
             c->rom=NULL;
             return 1;
         }
+        FILE * f=fopen(c->save_path,"rb");
+        if (f!=NULL){
+            fread(c->ram,c->ram_size, sizeof(uint8_t),f);
+            fclose(f);
+        }
+
     }
     c->rom_bank=1;
     c->ram_bank=0;
@@ -142,6 +154,28 @@ void cart_write(Cartridge *c,uint16_t addr,uint8_t value){
 }
 
 void cart_free(Cartridge *c){
+    if ((c->mbc_type==0x03)||(c->mbc_type==0x10)||(c->mbc_type==0x13)||(c->mbc_type==0x0F)){
+        //if its a stack MBC types
+        //we save in a .sav
+        if (c->ram==NULL){
+            free(c->rom);
+            free(c->ram);
+            c->rom=NULL;
+            c->ram=NULL;
+            return;
+        }
+        FILE *f=fopen(c->save_path,"wb");
+        if (f==NULL){
+            free(c->rom);
+            free(c->ram);
+            c->rom=NULL;
+            c->ram=NULL;
+            return;
+        }
+        fwrite(c->ram,c->ram_size,sizeof(uint8_t),f);
+        fclose(f);
+
+    }
     free(c->rom);
     free(c->ram);
     c->rom=NULL;

@@ -12,6 +12,7 @@ typedef struct {
     uint8_t *ram;
     size_t rom_size;
     char title[17];
+    char save_path[512];
     uint8_t mbc_type;
     size_t ram_size;
     uint8_t rom_bank;
