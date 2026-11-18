@@ -19,10 +19,14 @@ void gb_free(GameBoy *gb){
     cart_free(&gb->cart);
 }
 uint8_t read8(GameBoy *gb,uint16_t adresse){
-    if (adresse<=0x7fff && adresse<gb->cart.rom_size){
+    if (adresse>=0x0000 && adresse<=0x7FFF){
         //if we search a rom adresse
 
-        return gb->cart.rom[adresse];
+        return cart_read(&gb->cart, adresse);
+    }
+    else if (adresse>=0xA000 && adresse<=0xBFFF){
+        //if its rom ram (handled by cart_read)
+        return cart_read(&gb->cart, adresse);
     }
     else if (adresse>=0xC000 && adresse<=0xdfff){
         //if its wram
@@ -109,7 +113,13 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
 
 
 void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
-    if (adresse>=0xC000 && adresse<=0xdfff){
+    if (adresse>=0x0000 && adresse<=0x7FFF){
+        cart_write(&gb->cart,adresse,value);
+    }
+    else if (adresse>=0xA000 && adresse<=0xBFFF){
+        cart_write(&gb->cart,adresse,value);
+    }
+    else if (adresse>=0xC000 && adresse<=0xdfff){
         //if its wram
         gb->wram[adresse-0xC000]=value;
     }

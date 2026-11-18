@@ -1,4 +1,5 @@
 #include "cartridge.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,6 +47,10 @@ int cart_load(Cartridge *c,const char *rom_path){
             c->ram_size=0;
             break;
         }
+        case 1:{
+            c->ram_size=0;
+            break;
+        }
         case 2:{
             c->ram_size=8*1024;
             break;
@@ -68,12 +73,79 @@ int cart_load(Cartridge *c,const char *rom_path){
             return 1;
         }
     }
+    if (c->ram_size>0){
+        c->ram=calloc(c->ram_size,sizeof(uint8_t));
+        if (c->ram==NULL){
+            free(c->rom);
+            c->rom=NULL;
+            return 1;
+        }
+    }
+    c->rom_bank=1;
+    c->ram_bank=0;
+    c->is_ram_activated=false;
     return 0;
+}
+
+
+uint8_t cart_read(Cartridge *c,uint16_t addr){
+    if (addr>=0x0000 && addr<=0x3FFF){
+        return c->rom[addr];
+    }
+    else if (addr>=0x4000 && addr<=0x7FFF){
+        return c->rom[((c->rom_bank*0x4000)%c->rom_size)+(addr-(0x4000))];
+    }
+    else if (addr>=0xA000 && addr<=0xBFFF){
+        if ((!c->is_ram_activated) || c->ram==NULL){
+            return 0xFF;
+        }
+        else {
+            return c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)];
+        }
+    }
+    else{
+        return 0xFF;
+    }
+}
+
+void cart_write(Cartridge *c,uint16_t addr,uint8_t value){
+    if (c->mbc_type==0 && addr <= 0x7FFF){return;}
+    if (addr>=0x0000 && addr<=0x1FFF){
+        if ((value & 0b00001111)==0xA){
+            c->is_ram_activated=true;
+        }
+        else {
+            c->is_ram_activated=false;
+        }
+    }
+    else if (addr>=0x2000 && addr<=0x3FFF){
+        uint8_t rom_bank=value & 0b01111111;
+        if (rom_bank==0){
+            rom_bank=1;
+        }
+        c->rom_bank=rom_bank;
+    }
+    else if (addr>=0x4000 && addr<=0x5FFF){
+        if (value<=3){
+            uint8_t ram_bank=value;
+            c->ram_bank=ram_bank;
+        }
+    }
+    else if (addr>=0x6000 && addr<=0x7FFF){
+        //RTC clock todo
+    }
+    else if (addr>=0xA000 && addr<=0xBFFF){
+        if (c->is_ram_activated && c->ram!=NULL){
+            c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)]=value;
+        }
+    }
 }
 
 void cart_free(Cartridge *c){
     free(c->rom);
+    free(c->ram);
     c->rom=NULL;
+    c->ram=NULL;
 }
 void cart_print_header(const Cartridge *c){
     printf("title:%s \n",c->title);
