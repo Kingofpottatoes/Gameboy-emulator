@@ -1,4 +1,5 @@
 #include "gb.h"
+#include "apu.h"
 #include "cartridge.h"
 #include "cpu.h"
 #include <string.h>
@@ -64,6 +65,18 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     }
     else if(adresse==0xFF07){
         return gb->timer.tac | 0xF8;
+    }
+    else if (adresse==0xFF16){
+        return gb->apu.nr21 | 0x3F;
+    }
+    else if (adresse==0xFF17){
+        return gb->apu.nr22;
+    }
+    else if (adresse==0xFF18){
+        return 0xFF;
+    }
+    else if (adresse==0xFF19){
+        return gb->apu.nr24 | 0xBF;
     }
     else if (adresse==0xFF40){
         return gb->ppu.lcdc;
@@ -188,6 +201,21 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     }
     else if (adresse==0xFF4B){
         gb->ppu.wx=value;
+    }
+    else if (adresse==0xFF16){
+        gb->apu.nr21=value;
+    }
+    else if (adresse==0xFF17){
+        gb->apu.nr22=value;
+    }
+    else if (adresse==0xFF18){
+        gb->apu.nr23=value;
+    }
+    else if (adresse==0xFF19){
+        gb->apu.nr24=value;
+        if (((value >>7 )&1)==1){
+            apu_trigger_ch2(gb);
+        }
     }
     else if (adresse==0xFF00){
         gb->joypad_select=(value & 0b00110000);

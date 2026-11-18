@@ -4,6 +4,7 @@
 #include "cartridge.h"
 #include "timer.h"
 #include "ppu.h"
+#include "apu.h"
 #include <stdint.h>
 
 
@@ -12,6 +13,7 @@ typedef struct GameBoy {
     Cartridge cart;
     Timer timer;
     PPU ppu;
+    APU apu;
     uint8_t wram[0x2000]; //ram currently working
     uint8_t hram[0x7F];
     uint8_t vram[0x2000];
