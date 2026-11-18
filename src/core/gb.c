@@ -247,6 +247,7 @@ void gb_run_frame(GameBoy *gb){
         cycle=cpu_step(gb);
         timer_step(gb,cycle);
         ppu_step(gb, cycle);
+        apu_step(gb,cycles);
         cycles+=cycle;
     }
     gb->cycles_left=cycles-CYCLES_PER_FRAME;

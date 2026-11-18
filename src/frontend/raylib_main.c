@@ -4,8 +4,13 @@
 #include "../core/gb.h"
 
 #define SCALE 4
+#define WAITING_ROOM_SAMPLES_SIZE 8192
 
+static int16_t waiting_room_samples[WAITING_ROOM_SAMPLES_SIZE];
+static uint16_t sample_writer=0;
+static uint16_t sample_reader=0;
 static Texture2D screen;
+static AudioStream Audio;
 static Color pixels[144 * 160];
 //COLORS
 static const Color palette[4] = {
@@ -28,16 +33,45 @@ static const Key_Links links[] = {
     {KEY_S,START}
 };
 
+void waiting_room_write(int16_t samples[],uint16_t sample_count){
+
+    int i;
+    for (i=0;i<sample_count;i++){
+        uint16_t next_sample_pos=(sample_writer + 1) % WAITING_ROOM_SAMPLES_SIZE;
+        if (next_sample_pos==sample_reader){
+            return;
+        }
+        waiting_room_samples[sample_writer]=samples[i];
+        sample_writer=next_sample_pos;
+    }
+}
+
+void SendSound(void * buffer,unsigned int frames){
+    unsigned int i;
+    int16_t *samples = (int16_t *)buffer;
+    for (i=0;i<frames;i++){
+        if(sample_reader==sample_writer){
+            samples[i]=0;
+        }
+        else {
+            samples[i]=waiting_room_samples[sample_reader];
+            sample_reader=(sample_reader+1)% WAITING_ROOM_SAMPLES_SIZE;
+        }
+    }
+}
 
 void Window_init(){
     InitWindow(160 * SCALE, 144 * SCALE,"Game Boy");
+    InitAudioDevice();
     SetTargetFPS(60);
     Image Background=GenImageColor(160, 144, BLACK);
     screen=LoadTextureFromImage(Background);
+    Audio=LoadAudioStream(44100, 16, 1);
+    SetAudioStreamCallback(Audio, SendSound);
+    SetAudioStreamBufferSizeDefault(512);
+    PlayAudioStream(Audio);
     UnloadImage(Background);
 }
-
-
 
 int main(int argc, char *argv[]) {
     if(argc<2){
@@ -55,6 +89,8 @@ int main(int argc, char *argv[]) {
             gb_set_button(&gb, links[key].key_core, IsKeyDown(links[key].Key_front));
         }
         gb_run_frame(&gb);
+        waiting_room_write(gb.apu.samples, gb.apu.sample_fill);
+        gb.apu.sample_fill=0;
         int x,y;
         for (y=0;y<144;y++){
             for (x=0;x<160;x++){
@@ -68,6 +104,8 @@ int main(int argc, char *argv[]) {
         EndDrawing();
     }
     UnloadTexture(screen);
+    UnloadAudioStream(Audio);
+    CloseAudioDevice();
     CloseWindow();
     gb_free(&gb);
     return 0;
