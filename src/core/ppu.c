@@ -5,25 +5,41 @@
 static void render_scanline(GameBoy *gb){
 
     uint16_t map_base;
-    if(((gb->ppu.lcdc>>3)& 1)!=0){
-        map_base=0x9C00;
-    }
-    else{
-        map_base=0x9800;
-    }
-    uint16_t py = (gb->ppu.ly + gb->ppu.scy) & 0xFF;
-    uint16_t tile_row = py / 8;
-    uint8_t line_in_tile = py % 8;
     uint8_t bg_colors[160];
     int x;
     uint8_t px,tile_col,high_color,low_color,color,nuance;
     uint16_t tile_addr;
     
     for (x=0;x<160;x++){
+        //backgroud first
+        if(((gb->ppu.lcdc>>3)& 1)!=0){
+            map_base=0x9C00;
+        }
+        else{
+            map_base=0x9800;
+        }
+        uint16_t py = (gb->ppu.ly + gb->ppu.scy) & 0xFF;
         px = (x + gb->ppu.scx) & 0xFF;
+        uint8_t i_tile;
+        //then if there is a window we erase the background values
+        if (((gb->ppu.lcdc)&(1<<5))==(1<<5)){
+            if ((gb->ppu.ly>=gb->ppu.wy)&&(x>=gb->ppu.wx-7)){//-7 is a strangeness of the gameboy
+                //we are in the window
+                if ((gb->ppu.lcdc & (1<<6))==(1<<6)){
+                    map_base=0x9C00;
+                }
+                else{
+                    map_base=0x9800;
+                }
+                py=gb->ppu.ly-gb->ppu.wy;
+                px=x-(gb->ppu.wx -7);
+            }
+        }
+        uint16_t tile_row = py / 8;
+        uint8_t line_in_tile = py % 8;
         tile_col = px / 8;
+        i_tile=read8(gb,map_base+tile_row*32 +tile_col);
         uint8_t coord_in_line=px%8;
-        uint8_t i_tile=read8(gb,map_base+tile_row*32 +tile_col);
         if (((gb->ppu.lcdc>>4)&1)==1){
             tile_addr=0x8000 + i_tile * 16;
         }
