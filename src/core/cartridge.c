@@ -48,9 +48,43 @@ int cart_load(Cartridge *c,const char *rom_path){
     memcpy(c->title,c->rom+0x134,16);
     c->title[16]='\0';
     c->mbc_type=c->rom[0x147];
+    switch (c->mbc_type){
+        case 0x00:{
+            c->mbc=MBC_NONE;
+            break;
+        }
+        case 0x01:
+        case 0x02:
+        case 0x03:{
+            c->mbc=MBC1;
+            c->bank_low=1;
+            c->bank_high=0;
+            c->mode=0;
+            c->is_ram_activated=false;
+            break;
+        }
+        case 0x0F:
+        case 0x10:
+        case 0x11:
+        case 0x12:
+        case 0x13:{
+            c->mbc=MBC3;
+            c->rom_bank=1;
+            c->ram_bank=0;
+            c->is_ram_activated=false;
+            break;
+        }
+        default:{
+            printf("unsupported MBC type \n");
+            cart_free(c);
+            return 1;
+        }
+        
+    }
     switch (c->rom[0x149]){
         case 0:{
             c->ram_size=0;
+
             break;
         }
         case 1:{
@@ -93,64 +127,133 @@ int cart_load(Cartridge *c,const char *rom_path){
         }
 
     }
-    c->rom_bank=1;
-    c->ram_bank=0;
-    c->is_ram_activated=false;
     return 0;
 }
 
 
 uint8_t cart_read(Cartridge *c,uint16_t addr){
-    if (addr>=0x0000 && addr<=0x3FFF){
-        return c->rom[addr];
-    }
-    else if (addr>=0x4000 && addr<=0x7FFF){
-        return c->rom[((c->rom_bank*0x4000)%c->rom_size)+(addr-(0x4000))];
-    }
-    else if (addr>=0xA000 && addr<=0xBFFF){
-        if ((!c->is_ram_activated) || c->ram==NULL){
+    if (c->mbc==MBC_NONE){
+        if (addr>=0x0000 && addr<=0x3FFF){
+            return c->rom[addr];
+        }
+        else if (addr>=0x4000 && addr<=0x7FFF){
+            return c->rom[addr];
+        }
+        else if (addr>=0xA000 && addr<=0xBFFF){
             return 0xFF;
         }
-        else {
-            return c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)];
+    }
+    else if (c->mbc==MBC1){
+        if (addr>=0x0000 && addr<=0x3FFF){
+            if (c->mode==0){
+                return c->rom[addr];
+            }
+            else {
+                return c->rom[((c->bank_high << 5)*0x4000)%c->rom_size +addr];
+            }
+        }
+        else if (addr>=0x4000 && addr<=0x7FFF){
+            return c->rom[((c->bank_high << 5 | (c->bank_low))*0x4000)% c->rom_size +(addr-0x4000)] ;
+        }
+        else if (addr>=0xA000 && addr<=0xBFFF){
+            if ((!c->is_ram_activated) || c->ram==NULL){
+                return 0xFF;
+            }
+            else {
+                if (c->mode==0){
+                    return c->ram[(addr-0xA000)];
+                }
+                else{
+                    return c->ram[((c->bank_high)*0x2000)%c->ram_size +(addr-0xA000)];
+                }
+            }
+        }
+    }
+    else if (c->mbc==MBC3){
+        if (addr>=0x0000 && addr<=0x3FFF){
+            return c->rom[addr];
+        }
+        else if (addr>=0x4000 && addr<=0x7FFF){
+            return c->rom[((c->rom_bank*0x4000)%c->rom_size)+(addr-(0x4000))];
+        }
+        else if (addr>=0xA000 && addr<=0xBFFF){
+            if ((!c->is_ram_activated) || c->ram==NULL){
+                return 0xFF;
+            }
+            else {
+                return c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)];
+            }
         }
     }
     else{
         return 0xFF;
     }
+    return 0xFF;
 }
 
 void cart_write(Cartridge *c,uint16_t addr,uint8_t value){
-    if (c->mbc_type==0 && addr <= 0x7FFF){return;}
-    if (addr>=0x0000 && addr<=0x1FFF){
-        if ((value & 0b00001111)==0xA){
-            c->is_ram_activated=true;
+    if (c->mbc==MBC_NONE && addr <= 0x7FFF){return;}
+    if (c->mbc==MBC1){
+        if (addr>=0x0000 && addr<=0x1FFF){
+            if ((value & 0b00001111)==0xA){
+                c->is_ram_activated=true;
+            }
+            else {
+                c->is_ram_activated=false;
+            }
         }
-        else {
-            c->is_ram_activated=false;
+        else if (addr>=0x2000 && addr<=0x3FFF){
+            c->bank_low=value & 0b00011111;
+            if (c->bank_low==0){c->bank_low=1;}
+        }
+        else if (addr>=0x4000 && addr<=0x5FFF){
+            c->bank_high=value & 0b00000011;
+        }
+        else if (addr>=0x6000 && addr<=0x7FFF){
+            c->mode=value & 0b00000001;
+        }
+        else if (addr>=0xA000 && addr<=0xBFFF){
+            uint8_t ram_bank;
+            if (c->mode==0){ram_bank=0;}
+            else{ram_bank=c->bank_high;}
+            if (c->is_ram_activated && c->ram!=NULL){
+                c->ram[((ram_bank*0x2000)%c->ram_size)+(addr-0xA000)]=value;
+            }
         }
     }
-    else if (addr>=0x2000 && addr<=0x3FFF){
-        uint8_t rom_bank=value & 0b01111111;
-        if (rom_bank==0){
-            rom_bank=1;
+    if (c->mbc==MBC3){
+        if (addr>=0x0000 && addr<=0x1FFF){
+            if ((value & 0b00001111)==0xA){
+                c->is_ram_activated=true;
+            }
+            else {
+                c->is_ram_activated=false;
+            }
         }
-        c->rom_bank=rom_bank;
-    }
-    else if (addr>=0x4000 && addr<=0x5FFF){
-        if (value<=3){
-            uint8_t ram_bank=value;
-            c->ram_bank=ram_bank;
+        else if (addr>=0x2000 && addr<=0x3FFF){
+            uint8_t rom_bank=value & 0b01111111;
+            if (rom_bank==0){
+                rom_bank=1;
+            }
+            c->rom_bank=rom_bank;
+        }
+        else if (addr>=0x4000 && addr<=0x5FFF){
+            if (value<=3){
+                uint8_t ram_bank=value;
+                c->ram_bank=ram_bank;
+            }
+        }
+        else if (addr>=0x6000 && addr<=0x7FFF){
+            //RTC clock todo
+        }
+        else if (addr>=0xA000 && addr<=0xBFFF){
+            if (c->is_ram_activated && c->ram!=NULL){
+                c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)]=value;
+            }
         }
     }
-    else if (addr>=0x6000 && addr<=0x7FFF){
-        //RTC clock todo
-    }
-    else if (addr>=0xA000 && addr<=0xBFFF){
-        if (c->is_ram_activated && c->ram!=NULL){
-            c->ram[((c->ram_bank*0x2000)%c->ram_size)+(addr-0xA000)]=value;
-        }
-    }
+
+    
 }
 
 void cart_free(Cartridge *c){
