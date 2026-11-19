@@ -93,6 +93,25 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if (adresse==0xFF19){
         return gb->apu.ch2.nrx4 | 0xBF;
     }
+    else if (adresse==0xFF1A){
+        return gb->apu.nr30 | 0x7F;
+    }
+    else if (adresse==0xFF1B){
+        return 0xFF;
+    }
+    else if (adresse==0xFF1C){
+        return gb->apu.nr32 | 0x9F;
+    }
+    else if (adresse==0xFF1D){
+        return 0xFF;
+    }
+    else if (adresse==0xFF1E){
+        apu_trigger_ch3(&gb->apu);
+        return gb->apu.nr34 | 0xBF;
+    }
+    else if (adresse>=0xFF30 && adresse<=0xFF3F){
+        return gb->apu.ch3_wave_ram[adresse-0xFF30];
+    }
     else if (adresse==0xFF40){
         return gb->ppu.lcdc;
     }
@@ -232,7 +251,7 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if (adresse==0xFF14){
         gb->apu.ch1.nrx4=value;
         if (((value >>7 )&1)==1){
-            square_trigger(&gb->apu.ch1);
+            apu_trigger_ch1(&gb->apu);
         }
     }
     else if (adresse==0xFF16){
@@ -249,6 +268,28 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
         if (((value >>7 )&1)==1){
             square_trigger(&gb->apu.ch2);
         }
+    }
+    else if (adresse==0xFF1A){
+        gb->apu.nr30=value;
+        if (((value >>7 )&1)==0){
+            gb->apu.is_chanel3_on=false;
+        }
+    }
+    else if (adresse==0xFF1B){
+        gb->apu.nr31=value;
+        gb->apu.ch3_lenght_counter=256-value;
+    }
+    else if (adresse==0xFF1C){
+        gb->apu.nr32=value;
+    }
+    else if (adresse==0xFF1D){
+        gb->apu.nr33=value;
+    }
+    else if (adresse==0xFF1E){
+        gb->apu.nr34=value;
+    }
+    else if (adresse>=0xFF30 && adresse<=0xFF3F){
+        gb->apu.ch3_wave_ram[adresse-0xFF30]=value;
     }
     else if (adresse==0xFF00){
         gb->joypad_select=(value & 0b00110000);
