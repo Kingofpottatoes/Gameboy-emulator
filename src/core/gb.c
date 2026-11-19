@@ -67,16 +67,16 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
         return gb->timer.tac | 0xF8;
     }
     else if (adresse==0xFF16){
-        return gb->apu.nr21 | 0x3F;
+        return gb->apu.ch2.nrx1 | 0x3F;
     }
     else if (adresse==0xFF17){
-        return gb->apu.nr22;
+        return gb->apu.ch2.nrx2;
     }
     else if (adresse==0xFF18){
         return 0xFF;
     }
     else if (adresse==0xFF19){
-        return gb->apu.nr24 | 0xBF;
+        return gb->apu.ch2.nrx4 | 0xBF;
     }
     else if (adresse==0xFF40){
         return gb->ppu.lcdc;
@@ -203,18 +203,18 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
         gb->ppu.wx=value;
     }
     else if (adresse==0xFF16){
-        apu_write_n21(gb,value);
+        square_write_nrx1(&gb->apu.ch2,value);
     }
     else if (adresse==0xFF17){
-        gb->apu.nr22=value;
+        gb->apu.ch2.nrx2=value;
     }
     else if (adresse==0xFF18){
-        gb->apu.nr23=value;
+        gb->apu.ch2.nrx3=value;
     }
     else if (adresse==0xFF19){
-        gb->apu.nr24=value;
+        gb->apu.ch2.nrx4=value;
         if (((value >>7 )&1)==1){
-            apu_trigger_ch2(gb);
+            square_trigger(&gb->apu.ch2);
         }
     }
     else if (adresse==0xFF00){
