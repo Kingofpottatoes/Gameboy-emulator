@@ -32,6 +32,7 @@ typedef struct {
     uint8_t sequencer_step;
 
     SquareChannel ch1;
+    uint8_t nr10;
     SquareChannel ch2;
 
 } APU;

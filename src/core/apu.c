@@ -2,7 +2,6 @@
 #include "gb.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 
 
@@ -87,11 +86,12 @@ static void square_length_tick(SquareChannel *ch){
 
 void apu_step(GameBoy *gb, int cycles){
     square_step(&gb->apu.ch2, cycles);
+    square_step(&gb->apu.ch1,cycles);
     int16_t sample=0;
     gb->apu.time_counter+=cycles*44100;
     while (gb->apu.time_counter>=4194304){
         gb->apu.time_counter-=4194304;
-        sample=square_output(&gb->apu.ch2);
+        sample=square_output(&gb->apu.ch2)+square_output(&gb->apu.ch1);
         if(gb->apu.sample_fill<1024){
             gb->apu.samples[gb->apu.sample_fill]=sample;
             gb->apu.sample_fill+=1;
@@ -103,9 +103,11 @@ void apu_step(GameBoy *gb, int cycles){
             gb->apu.sequencer_step=(gb->apu.sequencer_step+1)%8;
             if (gb->apu.sequencer_step==7){
                 square_envelope_tick(&gb->apu.ch2);
+                square_envelope_tick(&gb->apu.ch1);
             }
             if (gb->apu.sequencer_step%2==0){
                 square_length_tick(&gb->apu.ch2);
+                square_length_tick(&gb->apu.ch1);
             }
     }
 }
