@@ -19,8 +19,14 @@ void apu_trigger_ch2(GameBoy *gb){
     uint16_t period=((gb->apu.nr24) & 0x07)<<8 |gb->apu.nr23;
     gb->apu.sound_counter=(2048-period)*4;
     gb->apu.envelope_timer=((gb->apu.nr22) & 0b00000111);
-    printf("trigger nr22=%02X\n", gb->apu.nr22);
+    if (gb->apu.length_timer==0){
+        gb->apu.length_timer=64;
+    }
 
+}
+void apu_write_nr21(GameBoy *gb,uint8_t value){
+    gb->apu.nr21=value;
+    gb->apu.length_timer=64 -((gb->apu.nr21) & 0b00111111);
 }
 
 
@@ -73,6 +79,14 @@ void apu_step(GameBoy *gb, int cycles){
                         else if (direction==0 && gb->apu.volume>0) {
                             gb->apu.volume-=1;
                         }
+                    }
+                }
+            }
+            if (gb->apu.sequencer_step%2==0){
+                if ((((gb->apu.nr24 & (1 <<6))>>6) ==1) && (gb->apu.length_timer>0)){
+                    gb->apu.length_timer-=1;
+                    if (gb->apu.length_timer==0){
+                        gb->apu.is_canal_on=false;
                     }
                 }
             }

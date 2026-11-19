@@ -203,7 +203,7 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
         gb->ppu.wx=value;
     }
     else if (adresse==0xFF16){
-        gb->apu.nr21=value;
+        apu_write_n21(gb,value);
     }
     else if (adresse==0xFF17){
         gb->apu.nr22=value;

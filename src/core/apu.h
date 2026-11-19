@@ -9,6 +9,7 @@ typedef struct {
     uint16_t sample_fill;
     int32_t time_counter;
     uint8_t envelope_timer;
+    uint8_t length_timer;
 
 
     uint8_t nr21;
@@ -32,5 +33,5 @@ void apu_init(GameBoy *gb);
 void apu_step(GameBoy *gb, int cycles);
 
 void apu_trigger_ch2(GameBoy *gb);
-
+void apu_write_n21(GameBoy *gb,uint8_t value);
 #endif
