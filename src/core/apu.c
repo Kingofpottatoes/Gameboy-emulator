@@ -2,6 +2,7 @@
 #include "gb.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 
 
@@ -17,6 +18,8 @@ void apu_trigger_ch2(GameBoy *gb){
     gb->apu.volume= (gb->apu.nr22 & 0b11110000)>>4;
     uint16_t period=((gb->apu.nr24) & 0x07)<<8 |gb->apu.nr23;
     gb->apu.sound_counter=(2048-period)*4;
+    gb->apu.envelope_timer=((gb->apu.nr22) & 0b00000111);
+    printf("trigger nr22=%02X\n", gb->apu.nr22);
 
 }
 
@@ -52,5 +55,26 @@ void apu_step(GameBoy *gb, int cycles){
             gb->apu.samples[gb->apu.sample_fill]=sample;
             gb->apu.sample_fill+=1;
         }
+    }
+    uint8_t env_period=((gb->apu.nr22) & 0b00000111);
+    uint8_t direction =((gb->apu.nr22) & 0b00001000)>>3;
+    gb->apu.sequencer_counter+=cycles;
+    while (gb->apu.sequencer_counter>=8192){
+            gb->apu.sequencer_counter-=8192;
+            gb->apu.sequencer_step=(gb->apu.sequencer_step+1)%8;
+            if (gb->apu.sequencer_step==7){
+                if (env_period!=0){
+                    gb->apu.envelope_timer-=1;
+                    if(gb->apu.envelope_timer==0){
+                        gb->apu.envelope_timer=env_period;
+                        if (direction==1 && gb->apu.volume<15){
+                            gb->apu.volume+=1;
+                        }
+                        else if (direction==0 && gb->apu.volume>0) {
+                            gb->apu.volume-=1;
+                        }
+                    }
+                }
+            }
     }
 }

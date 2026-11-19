@@ -63,12 +63,12 @@ void SendSound(void * buffer,unsigned int frames){
 void Window_init(){
     InitWindow(160 * SCALE, 144 * SCALE,"Game Boy");
     InitAudioDevice();
+    SetAudioStreamBufferSizeDefault(512);
     SetTargetFPS(60);
     Image Background=GenImageColor(160, 144, BLACK);
     screen=LoadTextureFromImage(Background);
     Audio=LoadAudioStream(44100, 16, 1);
     SetAudioStreamCallback(Audio, SendSound);
-    SetAudioStreamBufferSizeDefault(512);
     PlayAudioStream(Audio);
     UnloadImage(Background);
 }
