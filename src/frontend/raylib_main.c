@@ -44,7 +44,6 @@ void waiting_room_write(int16_t samples[],uint16_t sample_count){
     for (i=0;i<sample_count;i+=2){
         uint16_t next_sample_pos=(sample_writer + 2) % WAITING_ROOM_SAMPLES_SIZE;
         if (WAITING_ROOM_SAMPLES_SIZE - 1 - count_waiters_in_waiting_room()<2){
-            printf("overruns \n");
             return;
         }
         waiting_room_samples[sample_writer]=samples[i];
@@ -59,7 +58,6 @@ void SendSound(void * buffer,unsigned int frames){
         if(count_waiters_in_waiting_room()<2){
             samples[2*i]=0;
             samples[2*i+1]=0;
-            printf("underruns");
         }
         else {
             samples[2*i]=waiting_room_samples[sample_reader];

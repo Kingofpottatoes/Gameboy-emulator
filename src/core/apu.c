@@ -31,7 +31,7 @@ static uint32_t get_lfsr_step(APU *apu){
 }
 
 void square_trigger(SquareChannel *ch){
-    ch->is_canal_on=true;
+    ch->is_on=true;
     ch->volume= (ch->nrx2 & 0b11110000)>>4;
     uint16_t period=square_get_period(ch);
     ch->sound_counter=(2048-period)*4;
@@ -53,7 +53,7 @@ void square_write_nrx1(SquareChannel *ch,uint8_t value){
 
 
 static void square_step(SquareChannel *ch,int cycles){
-    if (ch->is_canal_on){
+    if (ch->is_on){
         ch->sound_counter-=cycles;
         while (ch->sound_counter<=0){
             ch->pos_motif+=1;
@@ -66,7 +66,7 @@ static void square_step(SquareChannel *ch,int cycles){
 
 static int16_t square_output(SquareChannel *ch){
     int16_t sample=0;
-    if (!ch->is_canal_on){
+    if (!ch->is_on){
             sample=0;
         }
     else{
@@ -103,7 +103,7 @@ static void square_length_tick(SquareChannel *ch){
     if ((((ch->nrx4 & (1 <<6))>>6) ==1) && (ch->length_timer>0)){
         ch->length_timer-=1;
         if (ch->length_timer==0){
-            ch->is_canal_on=false;
+            ch->is_on=false;
         }
     }
 }
@@ -127,7 +127,7 @@ static void sweep_tick(APU *apu){
     else{
         period-=(period>>shift);
     }
-    if (period>2047){apu->ch1.is_canal_on=false;return;}
+    if (period>2047){apu->ch1.is_on=false;return;}
     square_set_period(&apu->ch1,period);
 }
 
@@ -136,14 +136,14 @@ void apu_trigger_ch3(APU *apu){
     apu->ch3_wave_pos=0;
     uint16_t period=((apu->nr34) & 0x07)<<8 | apu->nr33;
     apu->ch3_wave_counter=(2048-period) * 2;
-    if (apu->ch3_lenght_counter==0){
-        apu->ch3_lenght_counter=256;
+    if (apu->ch3_length_counter==0){
+        apu->ch3_length_counter=256;
     }
-    apu->is_chanel3_on=true;
+    apu->is_ch3_on=true;
 }
 
 static void ch3_step(APU *apu, int cycles){
-    if (apu->is_chanel3_on){
+    if (apu->is_ch3_on){
         apu->ch3_wave_counter-=cycles;
         while (apu->ch3_wave_counter<=0){
             apu->ch3_wave_pos+=1;
@@ -157,7 +157,7 @@ static void ch3_step(APU *apu, int cycles){
 static int16_t ch3_output(APU *apu){
     int16_t sample=0;
     uint8_t volume= (apu->nr32 & 0b01100000)>>5;
-    if (!apu->is_chanel3_on){
+    if (!apu->is_ch3_on){
         sample=0;
         return sample;
     }
@@ -179,17 +179,17 @@ static int16_t ch3_output(APU *apu){
 }
 
 static void ch3_length_tick(APU *apu){
-    if ((((apu->nr34 & (1 <<6))>>6) ==1) && (apu->ch3_lenght_counter>0)){
-        apu->ch3_lenght_counter-=1;
-        if (apu->ch3_lenght_counter==0){
-            apu->is_chanel3_on=false;
+    if ((((apu->nr34 & (1 <<6))>>6) ==1) && (apu->ch3_length_counter>0)){
+        apu->ch3_length_counter-=1;
+        if (apu->ch3_length_counter==0){
+            apu->is_ch3_on=false;
         }
     }
 }
 
 
 void apu_trigger_ch4(APU *apu){
-    apu->ch4.is_canal_on=true;
+    apu->ch4.is_on=true;
     apu->ch4_lfsr=0b111111111111111;
     apu->ch4.volume= (apu->ch4.nrx2 & 0b11110000)>>4;
     apu->ch4.sound_counter=get_lfsr_step(apu);
@@ -201,7 +201,7 @@ void apu_trigger_ch4(APU *apu){
 }
 
 static void ch4_step(APU *apu, int cycles){
-    if (apu->ch4.is_canal_on){
+    if (apu->ch4.is_on){
         apu->ch4.sound_counter-=cycles;
         uint32_t step=get_lfsr_step(apu);
         while (apu->ch4.sound_counter<=0){
@@ -216,7 +216,7 @@ static void ch4_step(APU *apu, int cycles){
     }
 }
 static int16_t ch4_output(APU *apu){
-    if (!apu->ch4.is_canal_on){return 0;}
+    if (!apu->ch4.is_on){return 0;}
     else {
         if ((apu->ch4_lfsr & 1)==0){
             return apu->ch4.volume *400;

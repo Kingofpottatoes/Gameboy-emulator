@@ -132,16 +132,16 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if (adresse==0xFF26){
         uint8_t value = (gb->apu.nr52 & 0b10000000);
         value |= 0b01110000;
-        if (gb->apu.ch1.is_canal_on){
+        if (gb->apu.ch1.is_on){
             value |= 0b00000001;
         }
-        if (gb->apu.ch2.is_canal_on){
+        if (gb->apu.ch2.is_on){
             value |= 0b00000010;
         }
-        if (gb->apu.is_chanel3_on){
+        if (gb->apu.is_ch3_on){
             value |= 0b00000100;
         }
-        if (gb->apu.ch4.is_canal_on){
+        if (gb->apu.ch4.is_on){
             value |= 0b00001000;
         }
         return value;
@@ -307,12 +307,12 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     else if (adresse==0xFF1A){
         gb->apu.nr30=value;
         if (((value >>7 )&1)==0){
-            gb->apu.is_chanel3_on=false;
+            gb->apu.is_ch3_on=false;
         }
     }
     else if (adresse==0xFF1B){
         gb->apu.nr31=value;
-        gb->apu.ch3_lenght_counter=256-value;
+        gb->apu.ch3_length_counter=256-value;
     }
     else if (adresse==0xFF1C){
         gb->apu.nr32=value;
@@ -377,14 +377,14 @@ void gb_set_button(GameBoy *gb, uint8_t button, bool pressed){
 }
 
 void gb_run_frame(GameBoy *gb){
-    int cycles=gb->cycles_left;
-    int cycle=0;
-    while (cycles<CYCLES_PER_FRAME){
-        cycle=cpu_step(gb);
-        timer_step(gb,cycle);
-        ppu_step(gb, cycle);
-        apu_step(gb,cycle);
-        cycles+=cycle;
+    int frame_cycles=gb->cycles_left;
+    int step_cycles=0;
+    while (frame_cycles<CYCLES_PER_FRAME){
+        step_cycles=cpu_step(gb);
+        timer_step(gb,step_cycles);
+        ppu_step(gb, step_cycles);
+        apu_step(gb,step_cycles);
+        frame_cycles+=step_cycles;
     }
-    gb->cycles_left=cycles-CYCLES_PER_FRAME;
+    gb->cycles_left=frame_cycles-CYCLES_PER_FRAME;
 }

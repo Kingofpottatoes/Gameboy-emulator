@@ -16,7 +16,7 @@ typedef struct {
     int sound_counter;
     uint8_t pos_motif;
     uint8_t volume;
-    bool is_canal_on;
+    bool is_on;
     uint8_t envelope_timer;
     uint8_t length_timer;
 
@@ -37,8 +37,8 @@ typedef struct {
     //channel 2
     SquareChannel ch2;
     //channel 3
-    int16_t ch3_lenght_counter;
-    bool is_chanel3_on;
+    int16_t ch3_length_counter;
+    bool is_ch3_on;
     uint8_t ch3_wave_ram[16];
     uint8_t ch3_wave_pos;
     uint16_t ch3_wave_counter;
