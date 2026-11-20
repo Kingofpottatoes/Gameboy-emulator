@@ -47,7 +47,9 @@ typedef struct {
     uint8_t nr32;
     uint8_t nr33;
     uint8_t nr34;
-
+    //channel4
+    SquareChannel ch4;
+    uint16_t ch4_lfsr;
 
 
 } APU;
@@ -63,4 +65,6 @@ void apu_trigger_ch1(APU *apu);
 void square_write_nrx1(SquareChannel *ch,uint8_t value);
 
 void apu_trigger_ch3(APU *apu);
+
+void apu_trigger_ch4(APU *apu);
 #endif

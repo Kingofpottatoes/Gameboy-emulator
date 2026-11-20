@@ -106,11 +106,22 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
         return 0xFF;
     }
     else if (adresse==0xFF1E){
-        apu_trigger_ch3(&gb->apu);
         return gb->apu.nr34 | 0xBF;
     }
     else if (adresse>=0xFF30 && adresse<=0xFF3F){
         return gb->apu.ch3_wave_ram[adresse-0xFF30];
+    }
+    else if (adresse==0xFF20){
+        return 0xFF;
+    }
+    else if (adresse==0xFF21){
+        return gb->apu.ch4.nrx2;
+    }
+    else if (adresse==0xFF22){
+        return gb->apu.ch4.nrx3;
+    }
+    else if (adresse==0xFF23){
+        return gb->apu.ch4.nrx4 |0xBF;
     }
     else if (adresse==0xFF40){
         return gb->ppu.lcdc;
@@ -287,9 +298,27 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
     }
     else if (adresse==0xFF1E){
         gb->apu.nr34=value;
+        if (((value >>7 )&1)==1){
+            apu_trigger_ch3(&gb->apu);
+        }
     }
     else if (adresse>=0xFF30 && adresse<=0xFF3F){
         gb->apu.ch3_wave_ram[adresse-0xFF30]=value;
+    }
+    else if (adresse==0xFF20){
+        square_write_nrx1(&gb->apu.ch4,value);
+    }
+    else if (adresse==0xFF21){
+        gb->apu.ch4.nrx2=value;
+    }
+    else if (adresse==0xFF22){
+        gb->apu.ch4.nrx3=value;
+    }
+    else if (adresse==0xFF23){
+        gb->apu.ch4.nrx4=value;
+        if (((value >>7 )&1)==1){
+            apu_trigger_ch4(&gb->apu);
+        }
     }
     else if (adresse==0xFF00){
         gb->joypad_select=(value & 0b00110000);

@@ -12,12 +12,22 @@ static const uint8_t motifs[4][8] = {
     {0,1,1,1,1,1,1,0}
 };
 
+static const uint8_t base[8]={
+    8,16,32,48,64,80,96,112
+    
+};
+
 static uint16_t square_get_period(SquareChannel *ch){
     return ((ch->nrx4) & 0x07)<<8 |ch->nrx3;
 }
 static void square_set_period(SquareChannel *ch,uint16_t period){
     ch->nrx4=(ch->nrx4 & 0b11111000)|((period >> 8) & 0b111);
     ch->nrx3=period & 0b0000000011111111;
+}
+static uint32_t get_lfsr_step(APU *apu){
+    uint8_t shift=(apu->ch4.nrx3 & 0b11110000)>>4;
+    uint8_t divider=apu->ch4.nrx3 & 0b00000111;
+    return base[divider]<<shift;
 }
 
 void square_trigger(SquareChannel *ch){
@@ -177,15 +187,55 @@ static void ch3_length_tick(APU *apu){
     }
 }
 
+
+void apu_trigger_ch4(APU *apu){
+    apu->ch4.is_canal_on=true;
+    apu->ch4_lfsr=0b111111111111111;
+    apu->ch4.volume= (apu->ch4.nrx2 & 0b11110000)>>4;
+    apu->ch4.sound_counter=get_lfsr_step(apu);
+    apu->ch4.envelope_timer=((apu->ch4.nrx2) & 0b00000111);
+    if (apu->ch4.length_timer==0){
+        apu->ch4.length_timer=64;
+    }
+
+}
+
+static void ch4_step(APU *apu, int cycles){
+    if (apu->ch4.is_canal_on){
+        apu->ch4.sound_counter-=cycles;
+        uint32_t step=get_lfsr_step(apu);
+        while (apu->ch4.sound_counter<=0){
+            apu->ch4.sound_counter+=step;
+            uint8_t r=(apu->ch4_lfsr & 1)^((apu->ch4_lfsr >>1)&1);
+            apu->ch4_lfsr=(r<<14)|(apu->ch4_lfsr>>1);
+            if (((apu->ch4.nrx3>>3)&1)==1){
+                apu->ch4_lfsr=apu->ch4_lfsr & ~(1 << 6);
+                apu->ch4_lfsr=apu->ch4_lfsr|r << 6;
+            }
+        }
+    }
+}
+static int16_t ch4_output(APU *apu){
+    if (!apu->ch4.is_canal_on){return 0;}
+    else {
+        if ((apu->ch4_lfsr & 1)==0){
+            return apu->ch4.volume *400;
+        }
+        else{
+            return -apu->ch4.volume *400;
+        }
+    }
+}
 void apu_step(GameBoy *gb, int cycles){
     square_step(&gb->apu.ch2, cycles);
     square_step(&gb->apu.ch1,cycles);
     ch3_step(&gb->apu, cycles);
+    ch4_step(&gb->apu,cycles);
     int16_t sample=0;
     gb->apu.time_counter+=cycles*44100;
     while (gb->apu.time_counter>=4194304){
         gb->apu.time_counter-=4194304;
-        sample=square_output(&gb->apu.ch2)+square_output(&gb->apu.ch1)+ch3_output(&gb->apu);
+        sample=square_output(&gb->apu.ch2)+square_output(&gb->apu.ch1)+ch3_output(&gb->apu)+ch4_output(&gb->apu);
         if(gb->apu.sample_fill<1024){
             gb->apu.samples[gb->apu.sample_fill]=sample;
             gb->apu.sample_fill+=1;
@@ -198,11 +248,13 @@ void apu_step(GameBoy *gb, int cycles){
             if (gb->apu.sequencer_step==7){
                 square_envelope_tick(&gb->apu.ch2);
                 square_envelope_tick(&gb->apu.ch1);
+                square_envelope_tick(&gb->apu.ch4);
             }
             if (gb->apu.sequencer_step%2==0){
                 square_length_tick(&gb->apu.ch2);
                 square_length_tick(&gb->apu.ch1);
                 ch3_length_tick(&gb->apu);
+                square_length_tick(&gb->apu.ch4);
             }
             if (gb->apu.sequencer_step==2 ||gb->apu.sequencer_step==6){
                 sweep_tick(&gb->apu);
