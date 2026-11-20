@@ -24,7 +24,7 @@ typedef struct {
 
 
 typedef struct {
-    int16_t samples[1024];
+    int16_t samples[2048];
     uint16_t sample_fill;
     int32_t time_counter;
     uint8_t sweep_timer;

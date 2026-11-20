@@ -33,35 +33,38 @@ static const Key_Links links[] = {
     {KEY_S,START}
 };
 
-void waiting_room_write(int16_t samples[],uint16_t sample_count){
-
-    int i;
-    for (i=0;i<sample_count;i++){
-        uint16_t next_sample_pos=(sample_writer + 1) % WAITING_ROOM_SAMPLES_SIZE;
-        if (next_sample_pos==sample_reader){
-            printf("overruns \n");
-            return;
-        }
-        waiting_room_samples[sample_writer]=samples[i];
-        sample_writer=next_sample_pos;
-    }
-}
 
 int count_waiters_in_waiting_room(){
     return (sample_writer -sample_reader + WAITING_ROOM_SAMPLES_SIZE) % WAITING_ROOM_SAMPLES_SIZE;
 }
 
+void waiting_room_write(int16_t samples[],uint16_t sample_count){
+
+    int i;
+    for (i=0;i<sample_count;i+=2){
+        uint16_t next_sample_pos=(sample_writer + 2) % WAITING_ROOM_SAMPLES_SIZE;
+        if (WAITING_ROOM_SAMPLES_SIZE - 1 - count_waiters_in_waiting_room()<2){
+            printf("overruns \n");
+            return;
+        }
+        waiting_room_samples[sample_writer]=samples[i];
+        waiting_room_samples[(sample_writer+1)%WAITING_ROOM_SAMPLES_SIZE]=samples[i+1];
+        sample_writer=next_sample_pos;
+    }
+}
 void SendSound(void * buffer,unsigned int frames){
     unsigned int i;
     int16_t *samples = (int16_t *)buffer;
     for (i=0;i<frames;i++){
-        if(sample_reader==sample_writer){
-            samples[i]=0;
+        if(count_waiters_in_waiting_room()<2){
+            samples[2*i]=0;
+            samples[2*i+1]=0;
             printf("underruns");
         }
         else {
-            samples[i]=waiting_room_samples[sample_reader];
-            sample_reader=(sample_reader+1)% WAITING_ROOM_SAMPLES_SIZE;
+            samples[2*i]=waiting_room_samples[sample_reader];
+            samples[2*i +1]=waiting_room_samples[(sample_reader+1)% WAITING_ROOM_SAMPLES_SIZE];
+            sample_reader=(sample_reader+2)% WAITING_ROOM_SAMPLES_SIZE;
         }
     }
 }
@@ -73,7 +76,7 @@ void Window_init(){
     SetTargetFPS(60);
     Image Background=GenImageColor(160, 144, BLACK);
     screen=LoadTextureFromImage(Background);
-    Audio=LoadAudioStream(44100, 16, 1);
+    Audio=LoadAudioStream(44100, 16, 2);
     SetAudioStreamCallback(Audio, SendSound);
     PlayAudioStream(Audio);
     UnloadImage(Background);

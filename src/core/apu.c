@@ -231,13 +231,47 @@ void apu_step(GameBoy *gb, int cycles){
     square_step(&gb->apu.ch1,cycles);
     ch3_step(&gb->apu, cycles);
     ch4_step(&gb->apu,cycles);
-    int16_t sample=0;
     gb->apu.time_counter+=cycles*44100;
     while (gb->apu.time_counter>=4194304){
+        int left_sample=0;
+        int right_sample=0;
         gb->apu.time_counter-=4194304;
-        sample=square_output(&gb->apu.ch2)+square_output(&gb->apu.ch1)+ch3_output(&gb->apu)+ch4_output(&gb->apu);
-        if(gb->apu.sample_fill<1024){
-            gb->apu.samples[gb->apu.sample_fill]=sample;
+        int16_t ch1_sample=square_output(&gb->apu.ch1);
+        int16_t ch2_sample=square_output(&gb->apu.ch2);
+        int16_t ch3_sample=ch3_output(&gb->apu);
+        int16_t ch4_sample=ch4_output(&gb->apu);
+        uint8_t left_volume=(gb->apu.nr50 & 0b01110000)>>4;
+        uint8_t right_volume=gb->apu.nr50 & 0b00000111;
+        if (((gb->apu.nr51 & 0b00010000)>>4)==1){
+            left_sample+=ch1_sample;
+        }
+        if (((gb->apu.nr51 & 0b00100000)>>5)==1){
+            left_sample+=ch2_sample;
+        }
+        if (((gb->apu.nr51 & 0b01000000)>>6)==1){
+            left_sample+=ch3_sample;
+        }
+        if (((gb->apu.nr51 & 0b10000000)>>7)==1){
+            left_sample+=ch4_sample;
+        }
+        if (((gb->apu.nr51 & 0b00000001)>>0)==1){
+            right_sample+=ch1_sample;
+        }
+        if (((gb->apu.nr51 & 0b00000010)>>1)==1){
+            right_sample+=ch2_sample;
+        }
+        if (((gb->apu.nr51 & 0b00000100)>>2)==1){
+            right_sample+=ch3_sample;
+        }
+        if (((gb->apu.nr51 & 0b00001000)>>3)==1){
+            right_sample+=ch4_sample;
+        }
+        if(gb->apu.sample_fill<2047){
+            left_sample=left_sample*(left_volume+1)/8;
+            right_sample=right_sample*(right_volume+1)/8;
+            gb->apu.samples[gb->apu.sample_fill]=left_sample;
+            gb->apu.sample_fill+=1;
+            gb->apu.samples[gb->apu.sample_fill]=right_sample;
             gb->apu.sample_fill+=1;
         }
     }
