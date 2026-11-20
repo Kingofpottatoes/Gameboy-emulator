@@ -88,6 +88,8 @@ int main(int argc, char *argv[]) {
         for (key=0;key<8;key++){
             gb_set_button(&gb, links[key].key_core, IsKeyDown(links[key].Key_front));
         }
+        printf("bank=%02X PC=%04X\n", gb.cart.rom_bank, gb.cpu.pc);
+        printf("PC=%04X\n", gb.cpu.pc);
         gb_run_frame(&gb);
         waiting_room_write(gb.apu.samples, gb.apu.sample_fill);
         gb.apu.sample_fill=0;

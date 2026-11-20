@@ -123,6 +123,30 @@ uint8_t read8(GameBoy *gb,uint16_t adresse){
     else if (adresse==0xFF23){
         return gb->apu.ch4.nrx4 |0xBF;
     }
+    else if (adresse==0xFF24){
+        return gb->apu.nr50;
+    }
+    else if (adresse==0xFF25){
+        return gb->apu.nr51;
+    }
+    else if (adresse==0xFF26){
+        uint8_t value = (gb->apu.nr52 & 0b10000000);
+        value |= 0b01110000;
+        if (gb->apu.ch1.is_canal_on){
+            value |= 0b00000001;
+        }
+        if (gb->apu.ch2.is_canal_on){
+            value |= 0b00000010;
+        }
+        if (gb->apu.is_chanel3_on){
+            value |= 0b00000100;
+        }
+        if (gb->apu.ch4.is_canal_on){
+            value |= 0b00001000;
+        }
+        return value;
+
+    }
     else if (adresse==0xFF40){
         return gb->ppu.lcdc;
     }
@@ -319,6 +343,15 @@ void write8(GameBoy *gb, uint16_t adresse, uint8_t value){
         if (((value >>7 )&1)==1){
             apu_trigger_ch4(&gb->apu);
         }
+    }
+    else if (adresse==0xFF24){
+        gb->apu.nr50=value;
+    }
+    else if (adresse==0xFF25){
+        gb->apu.nr51=value;
+    }
+    else if (adresse==0xFF26){
+        gb->apu.nr52=(gb->apu.nr52 & 0b01111111)| (value & 0b10000000);
     }
     else if (adresse==0xFF00){
         gb->joypad_select=(value & 0b00110000);

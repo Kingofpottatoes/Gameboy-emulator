@@ -50,6 +50,10 @@ typedef struct {
     //channel4
     SquareChannel ch4;
     uint16_t ch4_lfsr;
+    //global
+    uint8_t nr50;
+    uint8_t nr51;
+    uint8_t nr52;
 
 
 } APU;
