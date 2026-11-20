@@ -39,11 +39,16 @@ void waiting_room_write(int16_t samples[],uint16_t sample_count){
     for (i=0;i<sample_count;i++){
         uint16_t next_sample_pos=(sample_writer + 1) % WAITING_ROOM_SAMPLES_SIZE;
         if (next_sample_pos==sample_reader){
+            printf("overruns \n");
             return;
         }
         waiting_room_samples[sample_writer]=samples[i];
         sample_writer=next_sample_pos;
     }
+}
+
+int count_waiters_in_waiting_room(){
+    return (sample_writer -sample_reader + WAITING_ROOM_SAMPLES_SIZE) % WAITING_ROOM_SAMPLES_SIZE;
 }
 
 void SendSound(void * buffer,unsigned int frames){
@@ -52,6 +57,7 @@ void SendSound(void * buffer,unsigned int frames){
     for (i=0;i<frames;i++){
         if(sample_reader==sample_writer){
             samples[i]=0;
+            printf("underruns");
         }
         else {
             samples[i]=waiting_room_samples[sample_reader];
@@ -88,11 +94,11 @@ int main(int argc, char *argv[]) {
         for (key=0;key<8;key++){
             gb_set_button(&gb, links[key].key_core, IsKeyDown(links[key].Key_front));
         }
-        printf("bank=%02X PC=%04X\n", gb.cart.rom_bank, gb.cpu.pc);
-        printf("PC=%04X\n", gb.cpu.pc);
-        gb_run_frame(&gb);
-        waiting_room_write(gb.apu.samples, gb.apu.sample_fill);
-        gb.apu.sample_fill=0;
+        if (!(count_waiters_in_waiting_room()>4096)){
+            gb_run_frame(&gb);
+            waiting_room_write(gb.apu.samples, gb.apu.sample_fill);
+            gb.apu.sample_fill=0;
+        }
         int x,y;
         for (y=0;y<144;y++){
             for (x=0;x<160;x++){

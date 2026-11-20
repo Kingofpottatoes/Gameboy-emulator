@@ -168,13 +168,13 @@ static int16_t ch3_output(APU *apu){
     else{
         sample=(sample & 0b00001111);
     }
+    sample=(2*sample -15)*400;
     switch (volume){
         case 0:{return 0;break;}//mute
         case 1:{break;}//100%
         case 2:{sample=sample/2;break;}//50%
         case 3 :{sample=sample/4;break;}//25%
     }
-    sample=(2*sample -15)*400;
     return sample;
 }
 
