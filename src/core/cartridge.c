@@ -256,34 +256,32 @@ void cart_write(Cartridge *c,uint16_t addr,uint8_t value){
     
 }
 
-void cart_free(Cartridge *c){
+void cart_save(Cartridge *c){
     if ((c->mbc_type==0x03)||(c->mbc_type==0x10)||(c->mbc_type==0x13)||(c->mbc_type==0x0F)){
         //if its a stack MBC types
         //we save in a .sav
+        //no need to free since we dont stop the Game Boy
         if (c->ram==NULL){
-            free(c->rom);
-            free(c->ram);
-            c->rom=NULL;
-            c->ram=NULL;
             return;
         }
         FILE *f=fopen(c->save_path,"wb");
         if (f==NULL){
-            free(c->rom);
-            free(c->ram);
-            c->rom=NULL;
-            c->ram=NULL;
             return;
         }
         fwrite(c->ram,c->ram_size,sizeof(uint8_t),f);
         fclose(f);
 
     }
+}
+
+void cart_free(Cartridge *c){
+    cart_save(c);
     free(c->rom);
     free(c->ram);
     c->rom=NULL;
     c->ram=NULL;
 }
+
 void cart_print_header(const Cartridge *c){
     printf("title:%s \n",c->title);
     printf("rom size:%zu Ko \n",c->rom_size/1024);

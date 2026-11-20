@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Boy emulator</title>
+  <meta name="description" content="Game Boy emulator made by Kingofpottatoes, written in C and powered by raylib">
+
+  <style>
+    :root {
+      --bg: #0e0f13;
+      --panel: #171920;
+      --border: #2a2d38;
+      --text: #e6e6e6;
+      --muted: #8a8f9c;
+      --eight: #4ade80;
+      --pressed: #4ade80;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, "JetBrains Mono", "Fira Code", monospace;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.08em;
+    }
+
+    h1 span { color: var(--eight); }
+
+    .screen {
+      padding: 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    canvas.emscripten {
+      display: block;
+      border: none;
+      background: black;
+      image-rendering: pixelated;
+      outline: none;
+    }
+
+    #rom-input {display:none;}
+
+    #file-selector{
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    #file-selector:hover{
+      background:  var(--pressed);
+      color: black
+    }
+    #rom-input:disabled + #file-selector{
+      opacity:0,4;
+      cursor:not-allowed;
+    }
+
+    .keys {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .keypad { text-align: center; }
+
+    .keypad p {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .grid {
+      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(4, 36px);
+      gap: 6px;
+    }
+
+    .grid button {
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+    }
+    .grid button.pressed {
+      color: black;
+      font: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+      background-color: var(--pressed) ;
+    }
+    .grid button.waiting{
+      border-color: aqua;
+    }
+    .grid button.conflict{
+      border-color: red;
+    }
+    
+    .chip {
+      position:absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 0.55rem;
+      color: var(--muted);
+    }
+
+    footer {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Game <span>Boy</span> EMULATOR</h1>
+
+  <div class="screen">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+  </div>
+  <label id="file-selector" for="rom-input">Load ROM</label>
+  <input type="file" accept=".gb" id="rom-input" disabled>
+  <span id="rom-name"></span>
+
+  <div class="keys">
+    <div class="keypad">
+      <p>Controls - Click a key to remap</p>
+      <div class="grid">
+        <!-- Joystick -->
+        <button data-key="UP">
+          <span class="chip">1</span>
+          <span class="bind">1</span>
+        </button>
+        <button data-key="DOWN">
+          <span class="chip">2</span>
+          <span class="bind">2</span>
+        </button>
+        <button data-key="RIGHT">
+          <span class="chip">3</span>
+          <span class="bind">3</span>
+        </button>
+        <button data-key="LEFT">
+          <span class="chip">C</span>
+          <span class="bind">4</span>
+        </button>
+        <!-- Controls -->
+        <button data-key="A">
+          <span class="chip">4</span>
+          <span class="bind">Q</span>
+        </button>
+        <button data-key="B">
+          <span class="chip">5</span>
+          <span class="bind">W</span>
+        </button>
+        <button data-key="START">
+          <span class="chip">6</span>
+          <span class="bind">E</span>
+        </button>
+        <button data-key="SELECT">
+          <span class="chip">D</span>
+          <span class="bind">R</span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <footer>Written in C, compiled to WebAssembly with Emscripten · powered by raylib</footer>
+
+  <script>
+    let keymap = ["KeyX", "Digit1", "Digit2", "Digit3", "KeyQ", "KeyW", "KeyE", "KeyA", "KeyS", "KeyD", "KeyZ", "KeyC", "Digit4", "KeyR", "KeyF", "KeyV"];
+    let state=0;
+    let waiting=-1;
+    let ready=false;
+    const input = document.getElementById("rom-input");
+    var Module = {
+      canvas: document.getElementById('canvas'),
+      onRuntimeInitialized:()=>{ready=true; input.disabled = false;}
+    };
+
+
+    function Send_keyboard(){
+      if(!ready){
+        return
+      }
+      Module.ccall("web_set_keyboard",null,["number"],[state])
+    }
+    function getButton(k){
+      return document.querySelector('[data-key="' + k + '"]')
+    }
+    window.addEventListener("keydown", (event)=>{
+      if (waiting!==-1){
+        event.preventDefault();
+        const button=getButton(waiting);
+        const j = keymap.indexOf(event.code);
+        if(j!==-1 && j!=waiting){
+           button.classList.add("conflict")
+          return
+        }
+        if (event.code=="Escape"){
+          waiting=-1;
+          button.classList.remove("waiting")
+          button.classList.remove("conflict")
+          return
+        }
+        button.querySelector(".bind").textContent = event.key.toUpperCase();
+        keymap[waiting] = event.code;
+        button.classList.remove("waiting");
+        button.classList.remove("conflict")
+        waiting=-1;
+        return
+      }
+      const k= keymap.indexOf(event.code);
+      if (k===-1){
+        return
+      }
+      event.preventDefault();
+      if (event.repeat){
+        return
+      }
+      state |= (1<<k); //light the bit
+      document.querySelector('[data-key="'+k+'"]').classList.add("pressed");
+      Send_keyboard();
+
+
+    })
+    window.addEventListener("keyup", (event)=>{
+      const k= keymap.indexOf(event.code);
+      if (k===-1){
+        return
+      }
+      event.preventDefault();
+      state &= ~(1 << k); //shut down the bit
+      document.querySelector('[data-key="'+k+'"]').classList.remove("pressed");
+      Send_keyboard();
+
+    })
+    document.querySelectorAll("[data-key]").forEach((button)=>{
+        button.addEventListener("click", ()=>{
+          const oldbutton=getButton(waiting)
+          if (waiting!==-1){
+            oldbutton.classList.remove("waiting")
+            oldbutton.classList.remove("conflict")
+          }
+          waiting=Number(button.dataset.key);
+          button.classList.add("waiting")
+          button.blur();
+
+        })
+    })
+
+    input.addEventListener("change",async () => {
+      const file= input.files[0];
+      if(!file){return}
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      Module.FS.writeFile("/rom.gb", bytes);
+      Module.ccall("web_load_rom", null, [], []);
+      document.getElementById("rom-name").textContent = file.name;
+      input.value = "";
+      input.blur();
+
+     })
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

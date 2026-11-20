@@ -3,16 +3,18 @@
 CC      := gcc
 CFLAGS  := -Wall -Wextra -g -MMD -MP -Isrc/core
 LDFLAGS := $(shell pkg-config --libs raylib) -lm
+RAYLIB_WEB = ~/Code/libs/raylib/src
 
 # Sources -> objects (src/core/foo.c -> build/core/foo.o)
 FRONTEND ?= raylib
 SRCS := $(wildcard src/core/*.c) src/frontend/$(FRONTEND)_main.c
+WEB_SRCS := $(wildcard src/core/*.c) src/frontend/web_main.c
 OBJS := $(patsubst src/%.c,build/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
 TARGET := gb
 
-.PHONY: all clean run
+.PHONY: all clean run web
 
 all: $(TARGET)
 
@@ -28,7 +30,11 @@ build/%.o: src/%.c
 # Usage: make run ROM=roms/tetris.gb
 run: $(TARGET)
 	./$(TARGET) $(ROM)
-
+# WEB
+web: 
+	mkdir -p docs
+	emcc $(WEB_SRCS) -o docs/index.html  -Isrc/core -I $(RAYLIB_WEB) $(RAYLIB_WEB)/libraylib.web.a -sUSE_GLFW=3 -sEXPORTED_RUNTIME_METHODS=ccall,FS -DPLATFORM_WEB -Os --shell-file web_shell.html
+# --- Cleanup ---
 clean:
 	rm -rf build $(TARGET)
 

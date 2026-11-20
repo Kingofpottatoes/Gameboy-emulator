@@ -41,7 +41,9 @@ uint8_t cart_read(Cartridge *c,uint16_t adresse);
 void cart_write(Cartridge *c,uint16_t adresse,uint8_t value);
 
 void cart_print_header(const Cartridge *);
+void cart_save(Cartridge *c);
 void cart_free(Cartridge *c);
+
 
 
 
