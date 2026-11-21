@@ -8,6 +8,7 @@
 static GameBoy gb;
 static bool rom_loaded=false;
 static bool load_error=false;
+static bool audio_loaded=false;
 #define SCALE 4
 #define WAITING_ROOM_SAMPLES_SIZE 8192
 
@@ -23,19 +24,6 @@ static const Color palette[4] = {
     {139, 172, 15, 255},
     {48, 98, 48, 255},
     {15, 56, 15, 255}
-};
-
-typedef struct { KeyboardKey Key_front; enum Keys key_core; } Key_Links;
-
-static const Key_Links links[] = {
-    {KEY_UP,UP},
-    {KEY_DOWN,DOWN},
-    {KEY_LEFT,LEFT},
-    {KEY_RIGHT,RIGHT},
-    {KEY_A,A},
-    {KEY_D,B},
-    {KEY_W,SELECT},
-    {KEY_S,START}
 };
 
 
@@ -90,6 +78,10 @@ void web_load_rom(const char *rom_path){
     if (rom_loaded==true){
         gb_free(&gb);
     }
+    if (!audio_loaded){
+        audio_init();
+        audio_loaded=true;
+    }
     int r=gb_init(&gb,rom_path);
     if (r!=0){
         load_error=true;
@@ -97,7 +89,6 @@ void web_load_rom(const char *rom_path){
     }
     rom_loaded=true;
     load_error=false;
-    audio_init();
 }
 
 void Window_init(){
@@ -118,6 +109,13 @@ EMSCRIPTEN_KEEPALIVE
 void load(const char *rom_path){
     web_load_rom(rom_path);
 }
+EMSCRIPTEN_KEEPALIVE
+void web_set_keyboard(uint8_t state){
+    int i;
+    for (i=0;i<8;i++){
+        gb_set_button(&gb,i,(state >> i) & 1);
+    }
+}
 void play_frame(){
     if (load_error){
         DrawMsg("Cant load this file",RED);
@@ -126,10 +124,6 @@ void play_frame(){
     if (!rom_loaded){
         DrawMsg("Load a rom to start",GRAY);
         return;
-    }
-    int key;
-    for (key=0;key<8;key++){
-        gb_set_button(&gb, links[key].key_core, IsKeyDown(links[key].Key_front));
     }
     if (!(count_waiters_in_waiting_room()>4096)){
         gb_run_frame(&gb);

@@ -76,7 +76,7 @@
       color: black
     }
     #rom-input:disabled + #file-selector{
-      opacity:0,4;
+      opacity:0.4;
       cursor:not-allowed;
     }
 
@@ -136,7 +136,7 @@
       border-color: red;
     }
     
-    .chip {
+    .gb {
       position:absolute;
       bottom: 2px;
       right: 4px;
@@ -165,41 +165,40 @@
     <div class="keypad">
       <p>Controls - Click a key to remap</p>
       <div class="grid">
-        <!-- Joystick -->
-        <button data-key="UP">
-          <span class="chip">1</span>
-          <span class="bind">1</span>
-        </button>
-        <button data-key="DOWN">
-          <span class="chip">2</span>
-          <span class="bind">2</span>
-        </button>
-        <button data-key="RIGHT">
-          <span class="chip">3</span>
-          <span class="bind">3</span>
-        </button>
-        <button data-key="LEFT">
-          <span class="chip">C</span>
-          <span class="bind">4</span>
-        </button>
-        <!-- Controls -->
-        <button data-key="A">
-          <span class="chip">4</span>
+                <!-- Controls -->
+        <button data-key="4">
+          <span class="gb">A</span>
           <span class="bind">Q</span>
         </button>
-        <button data-key="B">
-          <span class="chip">5</span>
-          <span class="bind">W</span>
+        <button data-key="5">
+          <span class="gb">B</span>
+          <span class="bind">D</span>
         </button>
-        <button data-key="START">
-          <span class="chip">6</span>
-          <span class="bind">E</span>
+        <button data-key="6">
+          <span class="gb">Start</span>
+          <span class="bind">Z</span>
         </button>
-        <button data-key="SELECT">
-          <span class="chip">D</span>
-          <span class="bind">R</span>
+        <button data-key="7">
+          <span class="gb">Select</span>
+          <span class="bind">S</span>
         </button>
-
+        <!-- Joystick -->
+        <button data-key="2">
+          <span class="gb">↑</span>
+          <span class="bind">↑</span>
+        </button>
+        <button data-key="3">
+          <span class="gb">↓</span>
+          <span class="bind">↓</span>
+        </button>
+        <button data-key="0">
+          <span class="gb">→</span>
+          <span class="bind">→</span>
+        </button>
+        <button data-key="1">
+          <span class="gb">←</span>
+          <span class="bind">←</span>
+        </button>
       </div>
     </div>
   </div>
@@ -207,8 +206,8 @@
   <footer>Written in C, compiled to WebAssembly with Emscripten · powered by raylib</footer>
 
   <script>
-    let keymap = ["KeyX", "Digit1", "Digit2", "Digit3", "KeyQ", "KeyW", "KeyE", "KeyA", "KeyS", "KeyD", "KeyZ", "KeyC", "Digit4", "KeyR", "KeyF", "KeyV"];
-    let state=0;
+    let keymap = ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"]; 
+    let state = 0;
     let waiting=-1;
     let ready=false;
     const input = document.getElementById("rom-input");

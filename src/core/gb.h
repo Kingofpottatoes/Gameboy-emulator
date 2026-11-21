@@ -35,8 +35,8 @@ enum Keys{
     DOWN,
     A,
     B,
+    START,
     SELECT,
-    START
 };
 
 int gb_init(GameBoy *gb,const char *rom_path);
