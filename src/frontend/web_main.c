@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <emscripten/emscripten.h>
 #include "../core/gb.h"
+#include <stdio.h>
 
 static GameBoy gb;
 static bool rom_loaded=false;
@@ -121,6 +122,18 @@ void set_volume(float volume){
     current_volume=volume;
     if (audio_loaded){
     SetMasterVolume(volume);
+    }
+}
+EMSCRIPTEN_KEEPALIVE
+void load_save(){
+    bool was_loaded=rom_loaded;
+    if (rom_loaded){
+        gb_free(&gb);
+        rom_loaded=false;
+    }
+    rename("/import.sav", "/rom.sav");
+    if (was_loaded){
+        web_load_rom("/rom.gb");
     }
 }
 void play_frame(){

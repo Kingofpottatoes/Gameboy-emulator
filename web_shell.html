@@ -85,6 +85,7 @@
     }
 
     #rom-input {display:none;}
+    #save_input { display: none;}
 
     .filebtn {
       display: inline-flex;
@@ -197,6 +198,8 @@
     <label id="file-selector" class="filebtn" for="rom-input">Load ROM</label>
     <input type="file" accept=".gb" id="rom-input" disabled>
     <button id="save" class="filebtn">Save</button>
+    <label id="save-selector" class="filebtn" for="save_input">Load   Save</label>
+    <input type="file" accept=".sav" id="save_input" disabled>
   </div>
   <span id="rom-name"></span>
 
@@ -259,11 +262,11 @@
     const rom_input = document.getElementById("rom-input");
     var Module = {
       canvas: document.getElementById('canvas'),
-      onRuntimeInitialized:()=>{ready=true; rom_input.disabled = false;}
+      onRuntimeInitialized:()=>{ready=true; rom_input.disabled = false; save_input.disabled=false;}
     };
     const volume = document.getElementById("volume");
     const save=document.getElementById("save");
-
+    const save_input=document.getElementById("save_input");
     function get_display_text(char){
       char = Display_rebind_Map[char] ?? char
       return char.toUpperCase()
@@ -361,13 +364,26 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = document.getElementById("rom-name").textContent.replace(".gb",".sav");
+        a.download = rom_name.replace(".gb",".sav");
         a.click();
         URL.revokeObjectURL(url);
       }
       catch {
-        document.getElementById("rom-name").textContent = "save of"+ document.getElementById("rom-name").textContent + "failed.";
+        document.getElementById("rom-name").textContent = "save of"+ rom_name + "failed.";
       }
+    })
+
+    save_input.addEventListener("change",async ()=>{
+      const file=save_input.files[0];
+      if(!file){return;}
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      Module.FS.writeFile("/import.sav", bytes);
+      Module._load_save();
+      save_input.value = ""
+      save_input.blur();
+
+
     })
   </script>
   {{{ SCRIPT }}}
