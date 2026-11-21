@@ -8,6 +8,7 @@ Game Boy (DMG) only
 Big thanks to:
 
 https://gbdev.io/pandocs/About.html to understand how its built
+
 https://github.com/retrio/gb-test-roms whithout wich i would probably never debugged that CPU
 
 
