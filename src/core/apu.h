@@ -41,7 +41,7 @@ typedef struct {
     bool is_ch3_on;
     uint8_t ch3_wave_ram[16];
     uint8_t ch3_wave_pos;
-    uint16_t ch3_wave_counter;
+    int ch3_wave_counter;
     uint8_t nr30;
     uint8_t nr31;
     uint8_t nr32;
