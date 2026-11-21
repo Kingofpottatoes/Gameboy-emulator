@@ -19,14 +19,36 @@ static AudioStream Audio;
 static float current_volume=1;
 static Color pixels[144 * 160];
 //COLORS
-static const Color palette[4] = {
+static const Color palette_Green[4] = {
     {155, 188, 15, 255},
     {139, 172, 15, 255},
     {48, 98, 48, 255},
     {15, 56, 15, 255}
 };
+// Grayscale
+static const Color palette_White[4] ={
+    {224, 224, 224, 255},
+    {160, 160, 160, 255},
+    {96, 96, 96, 255},
+    {32, 32, 32, 255}
+};
 
+// Blue
+static const Color palette_Blue[4] ={
+    {224, 240, 255, 255},
+    {124, 170, 230, 255},
+    {44, 88, 160, 255},
+    {12, 28, 72, 255}
+};
+// Night
+static const Color palette_Black[4] ={
+    {16, 18, 32, 255},
+    {56, 62, 98, 255},
+    {130, 140, 180, 255},
+    {220, 225, 240, 255}
+};
 
+static const Color *selected_palette=palette_Green;
 int count_waiters_in_waiting_room(){
     return (sample_writer -sample_reader + WAITING_ROOM_SAMPLES_SIZE) % WAITING_ROOM_SAMPLES_SIZE;
 }
@@ -125,6 +147,17 @@ void set_volume(float volume){
     }
 }
 EMSCRIPTEN_KEEPALIVE
+void change_color(int color){
+    switch (color) {
+        case 0:selected_palette=palette_Green;break;
+        case 1:selected_palette=palette_White;break;
+        case 2:selected_palette=palette_Blue;break;
+        case 3:selected_palette=palette_Black;break;
+    
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
 void load_save(){
     bool was_loaded=rom_loaded;
     if (rom_loaded){
@@ -153,7 +186,7 @@ void play_frame(){
     int x,y;
     for (y=0;y<144;y++){
         for (x=0;x<160;x++){
-            pixels[y * 160 + x] = palette[gb.framebuffer[y][x]];
+            pixels[y * 160 + x] = selected_palette[gb.framebuffer[y][x]];
         }
     }
     UpdateTexture(screen, pixels);

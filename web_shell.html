@@ -62,7 +62,31 @@
       border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     }
+    .colors{
+      display: flex;
+      flex-direction: column;
+      gap:8px;
+      align-items: center;
+    }
+    .color-button{
+      border: 1px solid var(--border);
+      background-color: var(--panel);
+      border-radius: 6px;
+      gap:16px;
+      font: inherit;
+      height: 36px;
+      display: inline-flex;
+      justify-content:center;
+      cursor: pointer;
+      color: var(--text);
+      padding: 0 12px;
+      align-items: center;
+    }
 
+    .color-button:hover{
+      background:  var(--pressed);
+      color: black
+    }
     .volume{
       justify-self: start;
       gap:8px;
@@ -185,6 +209,10 @@
   <div class="row">
     <div class="colors">
       <p>Colors</p>
+      <button class="color-button" data-palette="0">Green</button>
+      <button class="color-button" data-palette="1">White</button>
+      <button class="color-button" data-palette="2">Blue</button>
+      <button class="color-button" data-palette="3">Black</button>
    </div>
    <div class="screen">
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
@@ -382,8 +410,12 @@
       Module._load_save();
       save_input.value = ""
       save_input.blur();
-
-
+    })
+    document.querySelectorAll("[data-palette]").forEach((button)=>{
+      button.addEventListener("click", ()=>{
+        Module.ccall("change_color",null,["number"],[Number(button.dataset.palette)]);
+        button.blur()
+      })
     })
   </script>
   {{{ SCRIPT }}}
