@@ -294,7 +294,7 @@
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
       Module.FS.writeFile("/rom.gb", bytes);
-      Module.ccall("web_load_rom", null, [], []);
+      Module.ccall("load",null,["string"], ["/rom.gb"]);
       document.getElementById("rom-name").textContent = file.name;
       input.value = "";
       input.blur();

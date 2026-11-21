@@ -3,8 +3,11 @@
 #include <emscripten/emscripten.h>
 #include "../core/gb.h"
 
+#include <stdio.h>
+
 static GameBoy gb;
 static bool rom_loaded=false;
+static bool load_error=false;
 #define SCALE 4
 #define WAITING_ROOM_SAMPLES_SIZE 8192
 
@@ -41,7 +44,6 @@ int count_waiters_in_waiting_room(){
 }
 
 void waiting_room_write(int16_t samples[],uint16_t sample_count){
-
     int i;
     for (i=0;i<sample_count;i+=2){
         uint16_t next_sample_pos=(sample_writer + 2) % WAITING_ROOM_SAMPLES_SIZE;
@@ -68,42 +70,62 @@ void SendSound(void * buffer,unsigned int frames){
         }
     }
 }
+static void DrawMsg(const char *msg,Color c){
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText(msg,((160 * SCALE)-MeasureText(msg,24))/2, ((144 * SCALE)-24)/2,24,c);
+    EndDrawing();
+}
 
+void audio_init(){
+    InitAudioDevice();
+    SetAudioStreamBufferSizeDefault(512);
+    Audio=LoadAudioStream(44100, 16, 2);
+    SetAudioStreamCallback(Audio, SendSound);
+    PlayAudioStream(Audio);
+
+}
 
 void web_load_rom(const char *rom_path){
     if (rom_loaded==true){
         gb_free(&gb);
     }
-    gb_init(&gb,rom_path);
+    int r=gb_init(&gb,rom_path);
+    if (r!=0){
+        load_error=true;
+        return;
+    }
     rom_loaded=true;
+    load_error=false;
+    audio_init();
 }
 
 void Window_init(){
     InitWindow(160 * SCALE, 144 * SCALE,"Game Boy");
-    InitAudioDevice();
-    SetAudioStreamBufferSizeDefault(512);
     SetTargetFPS(60);
     Image Background=GenImageColor(160, 144, BLACK);
     screen=LoadTextureFromImage(Background);
-    Audio=LoadAudioStream(44100, 16, 2);
-    SetAudioStreamCallback(Audio, SendSound);
-    PlayAudioStream(Audio);
     UnloadImage(Background);
 }
 
 EMSCRIPTEN_KEEPALIVE
 void save(){
-    cart_save(&gb.cart);
+    if (rom_loaded){
+        cart_save(&gb.cart);
+    }
 }
 EMSCRIPTEN_KEEPALIVE
 void load(const char *rom_path){
     web_load_rom(rom_path);
 }
 void play_frame(){
+    if (load_error){
+        DrawMsg("Cant load this file",RED);
+        return;
+    }
     if (!rom_loaded){
-        BeginDrawing();
-        ClearBackground(BLACK);
-        DrawText("Load a rom to start",160 * SCALE/2, 144 * SCALE/2,12,WHITE);
+        DrawMsg("Load a rom to start",GRAY);
+        return;
     }
     int key;
     for (key=0;key<8;key++){
