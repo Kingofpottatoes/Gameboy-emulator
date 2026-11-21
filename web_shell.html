@@ -48,6 +48,10 @@
       gap:16px;
       align-items:center;
     }
+    .row-files{
+      gap:16px;
+      align-items:center;
+    }
     .colors {
       justify-self: end;
     }
@@ -82,19 +86,20 @@
 
     #rom-input {display:none;}
 
-    #file-selector{
+    .filebtn {
+      display: inline-flex;
       color: var(--text);
       font: inherit;
       cursor: pointer;
-      display: flex;
       align-items: center;
       justify-content: center;
       height: 36px;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
+      gap:16px;
     }
-    #file-selector:hover{
+    .filebtn:hover{
       background:  var(--pressed);
       color: black
     }
@@ -188,15 +193,18 @@
       <input id="volume" type="range" min="0" max="100">
    </div>
 </div>
-  <label id="file-selector" for="rom-input">Load ROM</label>
-  <input type="file" accept=".gb" id="rom-input" disabled>
+  <div class="row-files">
+    <label id="file-selector" class="filebtn" for="rom-input">Load ROM</label>
+    <input type="file" accept=".gb" id="rom-input" disabled>
+    <button id="save" class="filebtn">Save</button>
+  </div>
   <span id="rom-name"></span>
 
   <div class="keys">
     <div class="keypad">
       <p>Controls - Click a key to remap</p>
       <div class="grid">
-                <!-- Controls -->
+        <!-- Controls -->
         <button data-key="4">
           <span class="gb">A</span>
           <span class="bind">Q</span>
@@ -247,12 +255,14 @@
     let state = 0;
     let waiting=-1;
     let ready=false;
+    let rom_name;
     const rom_input = document.getElementById("rom-input");
     var Module = {
       canvas: document.getElementById('canvas'),
       onRuntimeInitialized:()=>{ready=true; rom_input.disabled = false;}
     };
     const volume = document.getElementById("volume");
+    const save=document.getElementById("save");
 
     function get_display_text(char){
       char = Display_rebind_Map[char] ?? char
@@ -336,11 +346,28 @@
       Module.FS.writeFile("/rom.gb", bytes);
       Module.ccall("load",null,["string"], ["/rom.gb"]);
       document.getElementById("rom-name").textContent = file.name;
+      rom_name=file.name
       rom_input.value = "";
       rom_input.blur();
      })
     volume.addEventListener("input", ()=>{
       Module.ccall("set_volume",null,["number"],[Number(volume.value)/100]);
+    })
+
+    save.addEventListener("click",()=>{
+      Module._save();
+      try {
+        const blob = new Blob([Module.FS.readFile("/rom.sav")], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = document.getElementById("rom-name").textContent.replace(".gb",".sav");
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      catch {
+        document.getElementById("rom-name").textContent = "save of"+ document.getElementById("rom-name").textContent + "failed.";
+      }
     })
   </script>
   {{{ SCRIPT }}}
