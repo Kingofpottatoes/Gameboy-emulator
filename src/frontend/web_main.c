@@ -77,6 +77,7 @@ void audio_init(){
 void web_load_rom(const char *rom_path){
     if (rom_loaded==true){
         gb_free(&gb);
+        rom_loaded=false;
     }
     if (!audio_loaded){
         audio_init();

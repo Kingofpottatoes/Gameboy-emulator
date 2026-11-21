@@ -175,11 +175,11 @@
           <span class="bind">D</span>
         </button>
         <button data-key="6">
-          <span class="gb">Start</span>
+          <span class="gb">Select</span>
           <span class="bind">Z</span>
         </button>
         <button data-key="7">
-          <span class="gb">Select</span>
+          <span class="gb">Start</span>
           <span class="bind">S</span>
         </button>
         <!-- Joystick -->
@@ -207,6 +207,12 @@
 
   <script>
     let keymap = ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"]; 
+    let Display_rebind_Map ={
+      "ArrowRight":"→",
+      "ArrowLeft":"←",
+      "ArrowUp":"↑",
+      "ArrowDown":"↓",
+    }
     let state = 0;
     let waiting=-1;
     let ready=false;
@@ -216,7 +222,10 @@
       onRuntimeInitialized:()=>{ready=true; input.disabled = false;}
     };
 
-
+    function get_display_text(char){
+      char = Display_rebind_Map[char] ?? char
+      return char.toUpperCase()
+    }
     function Send_keyboard(){
       if(!ready){
         return
@@ -241,7 +250,7 @@
           button.classList.remove("conflict")
           return
         }
-        button.querySelector(".bind").textContent = event.key.toUpperCase();
+        button.querySelector(".bind").textContent = get_display_text(event.key);
         keymap[waiting] = event.code;
         button.classList.remove("waiting");
         button.classList.remove("conflict")
