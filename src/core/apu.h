@@ -54,6 +54,9 @@ typedef struct {
     uint8_t nr50;
     uint8_t nr51;
     uint8_t nr52;
+    //capacitor 
+    float hp_left;
+    float hp_right;
 
 
 } APU;

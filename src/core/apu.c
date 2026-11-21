@@ -2,7 +2,7 @@
 #include "gb.h"
 #include <stdbool.h>
 #include <stdint.h>
-
+#include <stdio.h>
 
 
 static const uint8_t motifs[4][8] = {
@@ -231,6 +231,10 @@ void apu_step(GameBoy *gb, int cycles){
     square_step(&gb->apu.ch1,cycles);
     ch3_step(&gb->apu, cycles);
     ch4_step(&gb->apu,cycles);
+    float out_left;
+    float out_right;
+    uint8_t left_volume=(gb->apu.nr50 & 0b01110000)>>4;
+    uint8_t right_volume=gb->apu.nr50 & 0b00000111;
     gb->apu.time_counter+=cycles*44100;
     while (gb->apu.time_counter>=4194304){
         int left_sample=0;
@@ -240,8 +244,6 @@ void apu_step(GameBoy *gb, int cycles){
         int16_t ch2_sample=square_output(&gb->apu.ch2);
         int16_t ch3_sample=ch3_output(&gb->apu);
         int16_t ch4_sample=ch4_output(&gb->apu);
-        uint8_t left_volume=(gb->apu.nr50 & 0b01110000)>>4;
-        uint8_t right_volume=gb->apu.nr50 & 0b00000111;
         if (((gb->apu.nr51 & 0b00010000)>>4)==1){
             left_sample+=ch1_sample;
         }
@@ -266,12 +268,29 @@ void apu_step(GameBoy *gb, int cycles){
         if (((gb->apu.nr51 & 0b00001000)>>3)==1){
             right_sample+=ch4_sample;
         }
+        left_sample=left_sample*(left_volume+1)/8;
+        right_sample=right_sample*(right_volume+1)/8;
+        
+        out_left=left_sample-(gb->apu.hp_left);
+        out_right=right_sample-(gb->apu.hp_right);
+        gb->apu.hp_left=left_sample-(out_left*0.996f);
+        gb->apu.hp_right=right_sample-(out_right*0.996f);
+        if (out_left>32767){
+            out_left=32767;
+        }
+        if (out_right>32767){
+            out_right=32767;
+        }
+        if (out_left<-32768){
+            out_left=-32768;
+        }
+        if (out_right<-32768){
+            out_right=-32768;
+        }
         if(gb->apu.sample_fill<2047){
-            left_sample=left_sample*(left_volume+1)/8;
-            right_sample=right_sample*(right_volume+1)/8;
-            gb->apu.samples[gb->apu.sample_fill]=left_sample;
+            gb->apu.samples[gb->apu.sample_fill]=(int16_t)out_left;
             gb->apu.sample_fill+=1;
-            gb->apu.samples[gb->apu.sample_fill]=right_sample;
+            gb->apu.samples[gb->apu.sample_fill]=(int16_t)out_right;
             gb->apu.sample_fill+=1;
         }
     }

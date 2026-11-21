@@ -49,6 +49,7 @@
       align-items:center;
     }
     .row-files{
+      display: flex;
       gap:16px;
       align-items:center;
     }
@@ -388,7 +389,7 @@
     save.addEventListener("click",()=>{
       Module._save();
       try {
-        const blob = new Blob([Module.FS.readFile("/rom.sav")], { type: "text/plain" });
+        const blob = new Blob([Module.FS.readFile("/rom.sav")], { type: "application/octet-stream" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
