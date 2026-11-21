@@ -3,8 +3,6 @@
 #include <emscripten/emscripten.h>
 #include "../core/gb.h"
 
-#include <stdio.h>
-
 static GameBoy gb;
 static bool rom_loaded=false;
 static bool load_error=false;
@@ -17,6 +15,7 @@ static uint16_t sample_writer=0;
 static uint16_t sample_reader=0;
 static Texture2D screen;
 static AudioStream Audio;
+static float current_volume=1;
 static Color pixels[144 * 160];
 //COLORS
 static const Color palette[4] = {
@@ -115,6 +114,13 @@ void web_set_keyboard(uint8_t state){
     int i;
     for (i=0;i<8;i++){
         gb_set_button(&gb,i,(state >> i) & 1);
+    }
+}
+EMSCRIPTEN_KEEPALIVE
+void set_volume(float volume){
+    current_volume=volume;
+    if (audio_loaded){
+    SetMasterVolume(volume);
     }
 }
 void play_frame(){
