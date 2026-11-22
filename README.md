@@ -64,4 +64,4 @@ finally open the website on http://localhost:8000
 
 ## Known Issue
 
-Currently, the channel 3 have a slight low-frequency buzz at high volume, i will search for why, but that really strange and hard
+the sound isnt perfect and  have some crackement, i will try to fix it.
